@@ -1,51 +1,216 @@
-import { runPersonalScan, runCompanyScan, runSocialScan, runAccountsScan, reportToMarkdown, reportToCsv, scoreRisk } from '../../src/scanners/core/runtime.mjs';
+import { runPersonalScan, runCompanyScan, runSocialScan, runAccountsScan, reportToMarkdown, reportToCsv, scoreRisk, hashIdentifier } from '../../src/scanners/core/runtime.mjs';
 import { runExternalChecks } from '../../src/scanners/core/external-adapters.mjs';
 import { runHibpEmailRange } from '../../src/scanners/core/hibp-adapter.mjs';
 
 const cache = new Map();
-const response = (data, status = 200, type = 'application/json; charset=utf-8') => new Response(type.includes('json') ? JSON.stringify(data, null, 2) : data, { status, headers: { 'content-type': type, 'cache-control': 'no-store' } });
-async function body(request) { try { return await request.json(); } catch { return {}; } }
-function db(env = {}) { return env.DB || env.OYB_DB || env.OYB_DATABASE || null; }
-function findLocal(id = '') { return cache.get(id.replace(/^report_/, '')) || cache.get(id); }
-function gate(request, env = {}) { if (request.method !== 'GET' && !(request.headers.get('idempotency-key') || request.headers.get('x-idempotency-key'))) return response({ error: { code: 'MISSING_IDEMPOTENCY_KEY' } }, 400); const token = request.headers.get('x-private-token') || request.headers.get('authorization') || ''; if (request.method !== 'GET' && env.SCAN_MODE !== 'private' && token.length < 12) return response({ error: { code: 'MISSING_AUTH_TOKEN' } }, 401); }
+const DEFAULT_PLATFORM_CATALOG = [
+  { id: 'github', name: 'GitHub', domain: 'github.com', recoveryEntry: 'https://github.com/password_reset', dataExportEntry: 'https://github.com/settings/export', deletionEntry: 'https://github.com/settings/admin', cleanupNote: 'Review security settings, SSH keys, tokens and public repositories.' },
+  { id: 'google', name: 'Google', domain: 'google.com', recoveryEntry: 'https://accounts.google.com/signin/recovery', dataExportEntry: 'https://takeout.google.com/', deletionEntry: 'https://myaccount.google.com/delete-services-or-account', cleanupNote: 'Review account security, connected apps and Takeout exports.' },
+  { id: 'microsoft', name: 'Microsoft', domain: 'microsoft.com', recoveryEntry: 'https://account.live.com/password/reset', dataExportEntry: 'https://account.microsoft.com/privacy', deletionEntry: 'https://account.live.com/closeaccount.aspx', cleanupNote: 'Review recovery methods and connected devices.' },
+  { id: 'apple', name: 'Apple', domain: 'apple.com', recoveryEntry: 'https://iforgot.apple.com/', dataExportEntry: 'https://privacy.apple.com/', deletionEntry: 'https://privacy.apple.com/', cleanupNote: 'Review Apple ID devices, app passwords and privacy data.' },
+  { id: 'facebook', name: 'Facebook', domain: 'facebook.com', recoveryEntry: 'https://www.facebook.com/login/identify', dataExportEntry: 'https://www.facebook.com/dyi', deletionEntry: 'https://www.facebook.com/help/delete_account', cleanupNote: 'Review public profile, sessions and data export.' },
+  { id: 'x', name: 'X / Twitter', domain: 'x.com', recoveryEntry: 'https://x.com/account/begin_password_reset', dataExportEntry: 'https://x.com/settings/download_your_data', deletionEntry: 'https://x.com/settings/deactivate', cleanupNote: 'Review login methods and public profile exposure.' },
+  { id: 'linkedin', name: 'LinkedIn', domain: 'linkedin.com', recoveryEntry: 'https://www.linkedin.com/checkpoint/rp/request-password-reset', dataExportEntry: 'https://www.linkedin.com/psettings/member-data', deletionEntry: 'https://www.linkedin.com/help/linkedin/answer/a1339364', cleanupNote: 'Review public résumé fields and data export.' },
+  { id: 'wechat', name: 'WeChat', domain: 'wechat.com', recoveryEntry: 'https://help.wechat.com/', dataExportEntry: 'https://help.wechat.com/', deletionEntry: 'https://help.wechat.com/', cleanupNote: 'Review phone binding, recovery entries and privacy settings.' }
+];
 
-async function saveReport(env = {}, report = {}) {
-  const d = db(env); if (!d?.prepare || !report?.id) return false;
-  const created = report.generatedAt || new Date().toISOString();
-  try {
-    await d.prepare('insert or replace into reports (id,user_id,job_id,report_type,risk_score,report_json,created_at) values (?,?,?,?,?,?,?)').bind(report.id, 'local', report.scanId, report.reportType, Number(report.riskScore?.total || 0), JSON.stringify(report), created).run();
-    return true;
-  } catch (error) { console.warn('report store skipped', error.message); return false; }
+const response = (data, status = 200, type = 'application/json; charset=utf-8') => new Response(type.includes('json') ? JSON.stringify(data, null, 2) : data, { status, headers: { 'content-type': type, 'cache-control': 'no-store' } });
+const db = (env = {}) => env.DB || env.OYB_DB || env.OYB_DATABASE || null;
+const safeMsg = (error = {}) => String(error?.message || error || 'unknown_error').replace(/(Bearer\s+)[A-Za-z0-9._~-]+/gi, '$1[redacted]').replace(/(key=)[^\s&]+/gi, '$1[redacted]').replace(/(authorization|cookie|token|secret|password)[^,;\n]*/gi, '$1=[redacted]').slice(0, 240);
+const cleanId = (id = '') => String(id || '').replace(/^report_/, '');
+const now = () => new Date().toISOString();
+function jsonError(code, status = 500, message = code, detail) { return response({ error: { code, message, ...(detail ? { detail } : {}) } }, status); }
+async function body(request) { try { return await request.json(); } catch { return {}; } }
+function findLocal(id = '') { return cache.get(cleanId(id)) || cache.get(id); }
+function gate(request, env = {}) {
+  if (request.method !== 'GET' && !(request.headers.get('idempotency-key') || request.headers.get('x-idempotency-key'))) return jsonError('MISSING_IDEMPOTENCY_KEY', 400, 'POST requests require an Idempotency-Key header.');
+  const token = request.headers.get('x-private-token') || request.headers.get('authorization') || '';
+  if (request.method !== 'GET' && env.SCAN_MODE !== 'private' && token.length < 12) return jsonError('MISSING_AUTH_TOKEN', 401, 'Private mode token is required for write operations.');
+  return null;
 }
+function ensureCatalog(payload = {}) { payload.platformCatalog = Array.isArray(payload.platformCatalog) && payload.platformCatalog.length ? payload.platformCatalog : DEFAULT_PLATFORM_CATALOG; return payload; }
+
+async function runDb(statement, binds = []) { return statement.bind(...binds).run(); }
+async function saveReport(env = {}, report = {}) {
+  const d = db(env);
+  if (!d?.prepare || !report?.id) return { persisted: false, reason: 'D1 binding DB is not available.' };
+  const created = report.generatedAt || now();
+  const userId = 'local';
+  const subject = JSON.stringify(report.maskedSubject || {});
+  try {
+    await runDb(d.prepare('insert or replace into reports (id,user_id,job_id,report_type,risk_score,report_json,created_at) values (?,?,?,?,?,?,?)'), [report.id, userId, report.scanId, report.reportType, Number(report.riskScore?.total || 0), JSON.stringify(report), created]);
+    await runDb(d.prepare('insert or replace into jobs (id,user_id,subject_type,subject_hash,mode,status,progress,started_at,finished_at,error_message,created_at) values (?,?,?,?,?,?,?,?,?,?,?)'), [report.scanId, userId, report.reportType, await hashIdentifier(subject, env.HASH_SALT || 'open-your-box'), report.reportType, 'completed', 100, created, created, '', created]);
+    await runDb(d.prepare('delete from findings where job_id = ?'), [report.scanId]);
+    for (const finding of report.findings || []) {
+      await runDb(d.prepare('insert or replace into findings (id,job_id,user_id,source,category,severity,confidence,title,summary,evidence_type,evidence_preview,evidence_ref,remediation_json,created_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'), [finding.id, report.scanId, userId, finding.source, finding.category, finding.severity, finding.confidence, finding.title, finding.summary, finding.evidenceType, finding.evidencePreview, finding.evidenceRef || '', JSON.stringify(finding.remediation || {}), finding.createdAt || created]);
+    }
+    for (const task of report.accountTasks || []) {
+      await runDb(d.prepare('insert or replace into account_tasks (id,user_id,platform_id,platform_name,account_status,task_type,task_status,action_url,notes,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?)'), [task.id, userId, task.platformId || '', task.platformName || '', task.accountStatus || 'possible', task.taskType || 'review', task.taskStatus || 'todo', task.actionUrl || task.recoveryEntry || task.dataExportEntry || task.deletionEntry || '', `${report.scanId} · ${task.notes || ''}`.slice(0, 900), task.createdAt || created, task.updatedAt || created]);
+    }
+    return { persisted: true };
+  } catch (error) {
+    return { persisted: false, error: { code: 'D1_WRITE_FAILED', message: safeMsg(error) } };
+  }
+}
+
 async function readReport(env = {}, id = '') {
   const local = findLocal(id); if (local) return local;
   const d = db(env); if (!d?.prepare) return null;
-  const key = String(id || '').replace(/^report_/, '');
-  try { const row = await d.prepare('select report_json from reports where id = ? or job_id = ? or id = ? limit 1').bind(id, key, `report_${key}`).first(); return row?.report_json ? JSON.parse(row.report_json) : null; } catch { return null; }
+  const key = cleanId(id);
+  try {
+    const row = await d.prepare('select report_json from reports where id = ? or job_id = ? or id = ? limit 1').bind(id, key, `report_${key}`).first();
+    return row?.report_json ? JSON.parse(row.report_json) : null;
+  } catch { return null; }
+}
+
+function isVerifiedCompany(payload = {}) { return Boolean(payload.authorization?.verified || ['manual_admin_test', 'manual_admin', 'cloudflare_zone', 'dns_txt'].includes(payload.authorization?.method)); }
+async function scanCertificateTransparencyReal(domain = '', scanId = 'scan') {
+  const clean = value => String(value || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/[^a-z0-9.-]/g, '').replace(/^\.+|\.+$/g, '');
+  const d = clean(domain);
+  if (!d) return [];
+  try {
+    const res = await fetch(`https://crt.sh/?q=${encodeURIComponent(`%.${d}`)}&output=json`, { headers: { 'user-agent': 'OpenYourBox-CTSummary/1.0' } });
+    if (!res.ok) throw new Error(`crt.sh HTTP ${res.status}`);
+    const rows = await res.json();
+    const names = [...new Set((Array.isArray(rows) ? rows : []).flatMap(r => String(r.name_value || '').split(/\n+/)).map(clean).filter(x => x && (x === d || x.endsWith(`.${d}`))))].slice(0, 500);
+    const suspicious = names.filter(x => /(dev|test|stage|staging|admin|vpn|internal|old|backup|legacy|uat)/i.test(x));
+    return [{
+      id: `finding_ct_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      scanId,
+      subjectType: 'domain',
+      source: 'certificate_transparency',
+      category: 'subdomain_inventory',
+      severity: suspicious.length ? 'medium' : names.length > 50 ? 'low' : 'info',
+      confidence: 'verified',
+      title: `CT subdomain summary: ${d}`,
+      summary: `Certificate Transparency returned ${names.length} unique domain names; suspicious naming samples ${suspicious.length}. Raw CT rows are not stored.`,
+      evidenceType: 'certificate_transparency',
+      evidencePreview: `sample=${names.slice(0, 12).map(x => x.split('.').length > 2 ? `*.${x.split('.').slice(-2).join('.')}` : x).join(', ') || 'none'}; suspicious=${suspicious.slice(0, 8).map(x => x.split('.').length > 2 ? `*.${x.split('.').slice(-2).join('.')}` : x).join(', ') || 'none'}`,
+      remediation: { actionType: 'review_asset', label: 'Review CT subdomains', steps: ['Confirm each subdomain is owned', 'Retire stale hosts', 'Review admin/vpn/internal-like names'] },
+      createdAt: new Date().toISOString()
+    }];
+  } catch (error) {
+    return [{ id: `finding_ct_error_${Date.now().toString(36)}`, scanId, subjectType: 'domain', source: 'certificate_transparency', category: 'adapter_error', severity: 'info', confidence: 'low', title: 'CT lookup failed', summary: safeMsg(error), evidenceType: 'certificate_transparency', evidencePreview: d, remediation: { actionType: 'review', label: 'Retry CT lookup', steps: ['Retry later or verify with another CT data source'] }, createdAt: new Date().toISOString() }];
+  }
+}
+
+function mergeExtraFindings(report, extra = [], subjectType = 'personal') {
+  if (!extra.length) return report;
+  const seen = new Set((report.findings || []).map(f => `${f.source}:${f.category}:${f.title}`));
+  for (const item of extra) {
+    const key = `${item.source}:${item.category}:${item.title}`;
+    if (!seen.has(key)) { report.findings.push(item); seen.add(key); }
+  }
+  report.riskScore = scoreRisk(report.findings, subjectType);
+  report.dataSources = [...new Set([...(report.dataSources || []), ...extra.map(f => f.source)])];
+  report.remediationSteps = [...new Set(report.findings.flatMap(f => f.remediation?.steps || []))].slice(0, 20);
+  return report;
 }
 
 export async function handleScan(context, mode) {
   const denied = gate(context.request, context.env); if (denied) return denied;
-  const payload = await body(context.request);
-  payload.platformCatalog ||= [];
-  payload.authorization ||= { mode: 'private', verified: false };
-  const runner = { personal: runPersonalScan, company: runCompanyScan, social: runSocialScan, accounts: runAccountsScan }[mode];
-  const report = await runner(payload, context.env);
-  const extra = mode === 'personal' && payload.identifiers?.email ? await runHibpEmailRange(payload.identifiers.email, context.env, Boolean(payload.authorization?.verified), report.scanId) : await runExternalChecks(mode, payload, context.env, report.scanId);
-  if (extra.length) {
-    const seen = new Set((report.findings || []).map(f => `${f.source}:${f.category}:${f.title}`));
-    for (const item of extra) if (!seen.has(`${item.source}:${item.category}:${item.title}`)) report.findings.push(item);
-    report.riskScore = scoreRisk(report.findings, mode === 'company' ? 'company' : 'personal');
-    report.dataSources = [...new Set([...(report.dataSources || []), ...extra.map(f => f.source)])];
+  try {
+    const payload = ensureCatalog(await body(context.request));
+    payload.authorization ||= { mode: 'private', verified: false };
+    const runner = { personal: runPersonalScan, company: runCompanyScan, social: runSocialScan, accounts: runAccountsScan }[mode];
+    if (!runner) return jsonError('INVALID_SCAN_MODE', 400, 'Unsupported scan mode.');
+    const report = await runner(payload, context.env);
+    if (mode === 'personal') report.findings = (report.findings || []).filter(f => f.source !== 'hibp');
+    if (mode === 'company') report.findings = (report.findings || []).filter(f => f.source !== 'shodan' && !(f.source === 'certificate_transparency' && /adapter ready/i.test(f.title || '')));
+    const extra = mode === 'personal' && payload.identifiers?.email
+      ? await runHibpEmailRange(payload.identifiers.email, context.env, Boolean(payload.authorization?.verified), report.scanId)
+      : mode === 'company'
+        ? [...(isVerifiedCompany(payload) && payload.domain ? await scanCertificateTransparencyReal(payload.domain, report.scanId) : []), ...await runExternalChecks(mode, payload, context.env, report.scanId)]
+        : [];
+    mergeExtraFindings(report, extra, mode === 'company' ? 'company' : 'personal');
+    cache.set(report.scanId, report);
+    const persistence = await saveReport(context.env, report);
+    const status = persistence.persisted ? 'completed' : 'completed_not_persisted';
+    return response({ status, taskId: report.scanId, reportId: report.id, ...persistence, report });
+  } catch (error) {
+    return jsonError('SCAN_FAILED', 500, 'Scan failed with a sanitized runtime error.', safeMsg(error));
   }
-  cache.set(report.scanId, report);
-  const persisted = await saveReport(context.env, report);
-  return response({ status: 'completed', taskId: report.scanId, reportId: report.id, persisted, report });
 }
-export async function getReport(context) { const report = await readReport(context.env, context.params?.id || ''); return report ? response(report) : response({ status: 'not_found' }, 404); }
-export async function listReports(context = {}) { const d = db(context.env || {}); if (d?.prepare) { try { const rows = await d.prepare('select id, job_id, report_type, risk_score, created_at from reports order by created_at desc limit 50').all(); return response({ reports: (rows.results || []).map(r => ({ id: r.id, scanId: r.job_id, reportType: r.report_type, riskScore: r.risk_score, createdAt: r.created_at })) }); } catch {} } return response({ reports: [...cache.values()].map(r => ({ id: r.id, scanId: r.scanId, reportType: r.reportType, riskScore: r.riskScore.total, createdAt: r.generatedAt })) }); }
-export async function exportReport(context) { const report = await readReport(context.env, context.params?.id || ''); if (!report) return response({ error: { code: 'REPORT_NOT_FOUND' } }, 404); const f = new URL(context.request.url).searchParams.get('format'); if (f === 'md') return response(reportToMarkdown(report), 200, 'text/markdown; charset=utf-8'); if (f === 'csv') return response(reportToCsv(report), 200, 'text/csv; charset=utf-8'); return response(report); }
-export async function getTask() { return response({ status: 'not_found' }, 404); }
-export async function handleUpload(context, kind) { const denied = gate(context.request, context.env); if (denied) return denied; const text = await context.request.text(); const uploads = kind === 'mailbox' ? { mailboxText: text } : kind === 'browser-history' ? { browserText: text } : kind === 'platform-export' ? { platformExportText: text } : { passwordManagerText: text }; const report = await runPersonalScan({ uploads, platformCatalog: [] }, context.env); cache.set(report.scanId, report); const persisted = await saveReport(context.env, report); return response({ status: 'processed', kind, reportId: report.id, taskId: report.scanId, persisted, report }); }
-export async function exportData(context = {}) { const d = db(context.env || {}); if (d?.prepare) { try { const rows = await d.prepare('select report_json from reports order by created_at desc limit 100').all(); return response({ reports: (rows.results || []).map(r => JSON.parse(r.report_json)) }); } catch {} } return response({ reports: [...cache.values()] }); }
-export async function deleteData() { cache.clear(); return response({ status: 'cleared' }); }
+
+export async function getReport(context) {
+  const report = await readReport(context.env, context.params?.id || '');
+  return report ? response(report) : jsonError('REPORT_NOT_FOUND', 404, 'Report not found.');
+}
+export async function listReports(context = {}) {
+  const d = db(context.env || {});
+  if (d?.prepare) {
+    try {
+      const rows = await d.prepare('select id, job_id, report_type, risk_score, created_at from reports order by created_at desc limit 50').all();
+      return response({ reports: (rows.results || []).map(r => ({ id: r.id, scanId: r.job_id, reportType: r.report_type, riskScore: r.risk_score, createdAt: r.created_at })) });
+    } catch (error) { return jsonError('D1_READ_FAILED', 500, 'Could not read reports from D1.', safeMsg(error)); }
+  }
+  return response({ reports: [...cache.values()].map(r => ({ id: r.id, scanId: r.scanId, reportType: r.reportType, riskScore: r.riskScore?.total || 0, createdAt: r.generatedAt })) });
+}
+export async function exportReport(context) {
+  const report = await readReport(context.env, context.params?.id || '');
+  if (!report) return jsonError('REPORT_NOT_FOUND', 404, 'Report not found.');
+  const format = new URL(context.request.url).searchParams.get('format');
+  if (format === 'md') return response(reportToMarkdown(report), 200, 'text/markdown; charset=utf-8');
+  if (format === 'csv') return response(reportToCsv(report), 200, 'text/csv; charset=utf-8');
+  return response(report);
+}
+export async function getTask() { return jsonError('TASK_NOT_FOUND', 404, 'Task endpoint is reserved.'); }
+export async function handleUpload(context, kind) {
+  const denied = gate(context.request, context.env); if (denied) return denied;
+  try {
+    const text = await context.request.text();
+    const uploads = kind === 'mailbox' ? { mailboxText: text } : kind === 'browser-history' ? { browserText: text } : kind === 'platform-export' ? { platformExportText: text } : { passwordManagerText: text };
+    const report = await runPersonalScan(ensureCatalog({ uploads, authorization: { mode: 'private', verified: false } }), context.env);
+    cache.set(report.scanId, report);
+    const persistence = await saveReport(context.env, report);
+    return response({ status: 'processed', kind, reportId: report.id, taskId: report.scanId, ...persistence, report });
+  } catch (error) { return jsonError('UPLOAD_PROCESS_FAILED', 500, 'Upload text could not be processed.', safeMsg(error)); }
+}
+export async function exportData(context = {}) {
+  const d = db(context.env || {});
+  if (d?.prepare) {
+    try {
+      const rows = await d.prepare('select report_json from reports where user_id = ? order by created_at desc limit 100').bind('local').all();
+      return response({ reports: (rows.results || []).map(r => JSON.parse(r.report_json)) });
+    } catch (error) { return jsonError('D1_EXPORT_FAILED', 500, 'Could not export report data.', safeMsg(error)); }
+  }
+  return response({ reports: [...cache.values()] });
+}
+export async function deleteData(context = {}) {
+  const denied = context.request ? gate(context.request, context.env) : null; if (denied) return denied;
+  cache.clear();
+  const d = db(context.env || {});
+  if (d?.prepare) {
+    try {
+      await d.prepare('delete from findings where user_id = ?').bind('local').run();
+      await d.prepare('delete from account_tasks where user_id = ?').bind('local').run();
+      await d.prepare('delete from jobs where user_id = ?').bind('local').run();
+      await d.prepare('delete from reports where user_id = ?').bind('local').run();
+      return response({ status: 'cleared', persisted: true });
+    } catch (error) { return jsonError('D1_DELETE_FAILED', 500, 'Could not delete test report data.', safeMsg(error)); }
+  }
+  return response({ status: 'cleared', persisted: false });
+}
+
+async function txtRecords(domain = '') {
+  const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=TXT`, { headers: { accept: 'application/dns-json' } });
+  if (!res.ok) throw new Error(`DNS TXT ${res.status}`);
+  const data = await res.json();
+  return (data.Answer || []).map(r => String(r.data || '').replace(/^"|"$/g, '').replace(/"\s+"/g, ''));
+}
+function cleanDomain(value = '') { return String(value || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/[^a-z0-9.-]/g, '').replace(/^\.+|\.+$/g, ''); }
+export async function verifyDnsTxt(context = {}) {
+  const denied = gate(context.request, context.env); if (denied) return denied;
+  try {
+    const input = await body(context.request);
+    const domain = cleanDomain(input.domain || '');
+    if (!domain) return jsonError('INVALID_DOMAIN', 400, 'A domain is required.');
+    const salt = context.env?.HASH_SALT || 'open-your-box-dns-txt';
+    const token = input.token || `oyb-${(await hashIdentifier(domain, salt)).slice(0, 24)}`;
+    const recordName = `_openyourbox.${domain}`;
+    if (!input.check) return response({ status: 'token_generated', domain, recordName, token, txtValue: token, instructions: `Add TXT ${recordName} = ${token}, then call this endpoint again with check:true.` });
+    const records = await txtRecords(recordName);
+    const verified = records.some(value => value.includes(token));
+    return response({ status: verified ? 'verified' : 'pending', domain, recordName, token, verified, authorization: verified ? { mode: 'private', verified: true, method: 'dns_txt' } : { mode: 'private', verified: false, method: 'dns_txt_pending' } });
+  } catch (error) { return jsonError('DNS_TXT_VERIFY_FAILED', 500, 'DNS TXT verification failed.', safeMsg(error)); }
+}
