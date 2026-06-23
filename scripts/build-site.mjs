@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const dist = path.join(root, 'dist');
-const routes = ['personal','organization','tools','risk-model','report','safety','method','passport','company-card','map','diff','developer-kit','family-safety','executive-brief','watchlist','vendor-snapshot','privacy'];
+const routes = ['personal','organization','tools','risk-model','report','safety','method','passport','company-card','map','diff','developer-kit','family-safety','executive-brief','watchlist','vendor-snapshot','privacy','social','accounts','reports','risk','settings','auth'];
 const enhancerScript = '<script type="module" src="/assets/personal-phone-input.js"></script>';
 
 function prepareHtml(html, assetPrefix) {
