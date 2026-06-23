@@ -1,6 +1,6 @@
 {
   "name": "open-your-box",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Open Your Box｜本人、家庭与企业真实数字足迹和暴露面自查服务",
   "type": "module",
@@ -10,6 +10,7 @@
     "lint": "node scripts/lint-content.mjs",
     "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/generate-demo-report.mjs && node --check src/scanners/core/runtime.mjs && node --check src/scanners/core/external-adapters.mjs && node --check src/scanners/core/hibp-adapter.mjs && node --check functions/_lib/api.js",
     "test": "node scripts/test.mjs",
+    "test:api": "node scripts/cloudflare-api-smoke.mjs",
     "e2e": "node scripts/test.mjs --e2e",
     "lighthouse:dry": "node scripts/lighthouse-dry.mjs",
     "demo:report": "node scripts/generate-demo-report.mjs",
