@@ -1,0 +1,187 @@
+[
+  {
+    "risk_id": "account_reuse",
+    "title": "账号复用风险",
+    "score": 56,
+    "level": "中度",
+    "weight": 0.12,
+    "evidence_count": 9,
+    "sources": [
+      "Blackbird",
+      "Maigret",
+      "Sherlock"
+    ],
+    "explanation": "相同用户名在多个平台重复出现，容易被关联与撞库。",
+    "recommendation": [
+      "为核心平台改用不同用户名",
+      "注销长期不用的账号",
+      "统一开启 MFA"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "email_breach",
+    "title": "邮箱泄露风险",
+    "score": 72,
+    "level": "高",
+    "weight": 0.14,
+    "evidence_count": 2,
+    "sources": [
+      "h8mail",
+      "Have I Been Pwned"
+    ],
+    "explanation": "邮箱曾出现在泄露事件信号中，可能被用于钓鱼或撞库。",
+    "recommendation": [
+      "立即修改核心账号密码",
+      "启用多因素认证",
+      "使用邮箱别名隔离平台"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "public_profile",
+    "title": "公开资料过量风险",
+    "score": 48,
+    "level": "中度",
+    "weight": 0.08,
+    "evidence_count": 5,
+    "sources": [
+      "Blackbird",
+      "Social Analyzer"
+    ],
+    "explanation": "公开资料中可能包含过多可复用身份线索。",
+    "recommendation": [
+      "隐藏生日、手机号等资料",
+      "移除 README 中私人联系方式"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "domain_exposure",
+    "title": "域名暴露风险",
+    "score": 62,
+    "level": "高",
+    "weight": 0.12,
+    "evidence_count": 18,
+    "sources": [
+      "theHarvester",
+      "crt.sh",
+      "SecurityTrails"
+    ],
+    "explanation": "公开域名与证书历史暴露了测试与遗留资产线索。",
+    "recommendation": [
+      "盘点子域名归属",
+      "删除过期 DNS 记录"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "subdomain_legacy",
+    "title": "子域名遗留风险",
+    "score": 58,
+    "level": "中度",
+    "weight": 0.08,
+    "evidence_count": 4,
+    "sources": [
+      "Amass",
+      "Subfinder"
+    ],
+    "explanation": "存在命名为 test、dev、old 的遗留子域名。",
+    "recommendation": [
+      "确认负责人",
+      "关闭不再使用的测试系统"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "service_exposure",
+    "title": "公网服务暴露风险",
+    "score": 70,
+    "level": "高",
+    "weight": 0.16,
+    "evidence_count": 3,
+    "sources": [
+      "Shodan",
+      "Censys",
+      "httpx"
+    ],
+    "explanation": "公网可见服务增加被扫描和误配置利用的概率。",
+    "recommendation": [
+      "收敛管理端口",
+      "只允许 VPN 或白名单访问"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "secret_leak",
+    "title": "代码密钥泄露风险",
+    "score": 64,
+    "level": "高",
+    "weight": 0.14,
+    "evidence_count": 2,
+    "sources": [
+      "Gitleaks",
+      "TruffleHog"
+    ],
+    "explanation": "仓库历史中存在疑似配置或密钥片段。",
+    "recommendation": [
+      "轮换相关 Token",
+      "清理 Git 历史或标记失效"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "cloud_misconfig",
+    "title": "云配置暴露风险",
+    "score": 38,
+    "level": "轻度",
+    "weight": 0.08,
+    "evidence_count": 1,
+    "sources": [
+      "Prowler",
+      "Bucket 模块"
+    ],
+    "explanation": "云资源公开策略需要复核。",
+    "recommendation": [
+      "检查 Bucket 公共访问",
+      "最小化 IAM 权限"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "threat_intel",
+    "title": "威胁情报命中风险",
+    "score": 34,
+    "level": "轻度",
+    "weight": 0.04,
+    "evidence_count": 1,
+    "sources": [
+      "VirusTotal",
+      "GreyNoise"
+    ],
+    "explanation": "少量 IP 出现低置信威胁情报提示。",
+    "recommendation": [
+      "人工核验",
+      "观察是否持续命中"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  },
+  {
+    "risk_id": "governance_gap",
+    "title": "治理闭环缺口",
+    "score": 50,
+    "level": "中度",
+    "weight": 0.04,
+    "evidence_count": 3,
+    "sources": [
+      "GitHub Actions",
+      "Watchlist"
+    ],
+    "explanation": "缺少周期性复查和修复验收机制。",
+    "recommendation": [
+      "建立 Watchlist",
+      "每月导入一次新报告对比"
+    ],
+    "review_method": "下次导入报告后与本次基线做 Diff，观察新增、已修复和仍未处理项。"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "title": "Exposure Diff Before",
+  "totalScore": 68,
+  "assets": 36,
+  "risks": [
+    "公开邮箱格式",
+    "公网服务暴露",
+    "历史证书线索"
+  ],
+  "fixed": []
+}

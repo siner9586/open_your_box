@@ -1,0 +1,13 @@
+{
+  "title": "Exposure Diff After",
+  "totalScore": 47,
+  "assets": 29,
+  "risks": [
+    "公开邮箱格式"
+  ],
+  "fixed": [
+    "关闭过期测试系统",
+    "收敛 8443 管理端口",
+    "轮换疑似历史 Token"
+  ]
+}

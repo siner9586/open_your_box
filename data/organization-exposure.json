@@ -1,0 +1,110 @@
+{
+  "id": "demo-org-2026-06",
+  "reportType": "organization",
+  "generatedAt": "2026-06-23T00:00:00+08:00",
+  "authorizedScope": "example.com 与 203.0.113.10 的演示组织资产范围",
+  "toolsUsed": [
+    "theHarvester",
+    "SpiderFoot",
+    "crt.sh",
+    "SecurityTrails",
+    "Shodan",
+    "Censys",
+    "httpx",
+    "Gitleaks"
+  ],
+  "totalScore": 68,
+  "level": "高暴露",
+  "summary": "Demo 显示：18 个子域名、12 个公开邮箱、3 个公网服务、1 个过期测试系统、1 个历史证书线索、2 个仓库敏感配置提醒。建议先收敛测试系统与管理端口。",
+  "findings": [
+    {
+      "title": "子域名资产较多",
+      "maskedValue": "*.example.com",
+      "count": 18,
+      "risk": "medium",
+      "tools": [
+        "theHarvester",
+        "crt.sh"
+      ],
+      "explanation": "公开证书和 DNS 记录可帮助外部理解资产边界。"
+    },
+    {
+      "title": "公开邮箱格式",
+      "maskedValue": "z***@example.com",
+      "count": 12,
+      "risk": "medium",
+      "tools": [
+        "theHarvester",
+        "SpiderFoot"
+      ],
+      "explanation": "邮箱格式暴露可能扩大钓鱼攻击面。"
+    },
+    {
+      "title": "公网服务暴露",
+      "maskedValue": "203.0.113.*",
+      "count": 3,
+      "risk": "high",
+      "tools": [
+        "Shodan",
+        "Censys"
+      ],
+      "explanation": "过期测试系统和远程管理服务需要收敛。"
+    },
+    {
+      "title": "仓库敏感配置提醒",
+      "maskedValue": "demo-org/**",
+      "count": 2,
+      "risk": "high",
+      "tools": [
+        "Gitleaks",
+        "TruffleHog"
+      ],
+      "explanation": "历史配置文件可能包含已失效但仍需轮换的凭证片段。"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "o1",
+      "title": "关闭过期测试子域名",
+      "difficulty": "medium",
+      "estimatedMinutes": 60,
+      "riskReduction": 15,
+      "steps": [
+        "确认业务负责人",
+        "备份必要内容",
+        "删除 DNS 或改为内网访问"
+      ],
+      "verification": "公共 DNS 无解析或仅内网可访问。",
+      "status": "todo"
+    },
+    {
+      "id": "o2",
+      "title": "收敛远程管理端口",
+      "difficulty": "hard",
+      "estimatedMinutes": 120,
+      "riskReduction": 18,
+      "steps": [
+        "列出公网管理端口",
+        "迁移到 VPN / 零信任入口",
+        "加白名单与 MFA"
+      ],
+      "verification": "Shodan / Censys 不再显示管理面板。",
+      "status": "todo"
+    },
+    {
+      "id": "o3",
+      "title": "给公司域名增加 DMARC / SPF / DKIM 复核",
+      "difficulty": "medium",
+      "estimatedMinutes": 90,
+      "riskReduction": 9,
+      "steps": [
+        "检查 DNS TXT 记录",
+        "设置合理策略",
+        "监控退信与报告"
+      ],
+      "verification": "邮件认证检查通过。",
+      "status": "todo"
+    }
+  ],
+  "nextReviewDate": "2026-07-23"
+}

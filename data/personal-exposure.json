@@ -1,0 +1,98 @@
+{
+  "id": "demo-personal-2026-06",
+  "reportType": "personal",
+  "generatedAt": "2026-06-23T00:00:00+08:00",
+  "authorizedScope": "demo_user 与 d***@example.com 的演示自查范围",
+  "toolsUsed": [
+    "Blackbird",
+    "Maigret",
+    "Sherlock",
+    "Holehe",
+    "h8mail",
+    "Have I Been Pwned",
+    "GitHub Code Search",
+    "Gitleaks"
+  ],
+  "totalScore": 56,
+  "level": "中度暴露",
+  "summary": "Demo 显示：7 个旧账号、2 个用户名复用、1 个邮箱泄露事件信号、1 个 GitHub 公开邮箱暴露。建议先处理核心邮箱、旧账号和开发者资料。",
+  "findings": [
+    {
+      "title": "旧账号遗留",
+      "maskedValue": "demo_user",
+      "count": 7,
+      "risk": "medium",
+      "tools": [
+        "Blackbird",
+        "Maigret"
+      ],
+      "explanation": "长期不用的平台仍可公开关联同一用户名。"
+    },
+    {
+      "title": "邮箱泄露事件信号",
+      "maskedValue": "d***@example.com",
+      "count": 1,
+      "risk": "high",
+      "tools": [
+        "h8mail",
+        "HIBP"
+      ],
+      "explanation": "只展示事件命中摘要，不保存泄露明文。"
+    },
+    {
+      "title": "GitHub 公开邮箱",
+      "maskedValue": "d***@example.com",
+      "count": 1,
+      "risk": "medium",
+      "tools": [
+        "GitHub Code Search"
+      ],
+      "explanation": "公开提交或资料页可能暴露私人邮箱。"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "p1",
+      "title": "给核心邮箱开启 MFA",
+      "difficulty": "easy",
+      "estimatedMinutes": 15,
+      "riskReduction": 12,
+      "steps": [
+        "进入邮箱安全设置",
+        "绑定认证器 App 或硬件密钥",
+        "保存备用恢复码"
+      ],
+      "verification": "重新登录时需要第二因素验证。",
+      "status": "todo"
+    },
+    {
+      "id": "p2",
+      "title": "注销 3 个不再使用的旧账号",
+      "difficulty": "medium",
+      "estimatedMinutes": 45,
+      "riskReduction": 10,
+      "steps": [
+        "按平台优先级排序",
+        "下载必要数据",
+        "提交注销或隐私隐藏申请"
+      ],
+      "verification": "平台公开页不再显示账号资料。",
+      "status": "todo"
+    },
+    {
+      "id": "p3",
+      "title": "隐藏 GitHub 私人邮箱",
+      "difficulty": "easy",
+      "estimatedMinutes": 10,
+      "riskReduction": 8,
+      "steps": [
+        "打开 GitHub Email settings",
+        "勾选 Keep my email addresses private",
+        "检查 Git 配置邮箱"
+      ],
+      "verification": "新提交使用 noreply 邮箱。",
+      "status": "todo"
+    }
+  ],
+  "nextReviewDate": "2026-07-23"
+}

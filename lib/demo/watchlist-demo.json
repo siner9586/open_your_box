@@ -1,0 +1,21 @@
+{
+  "title": "Watchlist｜持续监测清单",
+  "items": [
+    {
+      "type": "domain",
+      "value": "example.com",
+      "mode": "demo"
+    },
+    {
+      "type": "github_org",
+      "value": "demo-org",
+      "mode": "demo"
+    },
+    {
+      "type": "ip",
+      "value": "203.0.113.*",
+      "mode": "demo"
+    }
+  ],
+  "policy": "默认不真实扫描，只有用户在私有环境配置授权清单和 Secret 后才执行。"
+}

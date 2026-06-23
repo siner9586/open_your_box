@@ -1,0 +1,24 @@
+{
+  "title": "Exposure Passport｜数字暴露护照",
+  "usernameReuseIndex": 62,
+  "emailBreachEvents": 1,
+  "legacyAccounts": 7,
+  "publicProfileExposure": "中",
+  "developerFootprint": "GitHub 公开邮箱提醒",
+  "priorityPlatforms": [
+    "旧论坛",
+    "开发者社区",
+    "社交资料页"
+  ],
+  "sevenDayTasks": [
+    "开启核心邮箱 MFA",
+    "注销 3 个旧账号",
+    "隐藏 GitHub 私人邮箱"
+  ],
+  "thirtyDayPlan": [
+    "邮箱别名治理",
+    "密码管理器盘点",
+    "每月复查一次"
+  ],
+  "nextReview": "2026-07-23"
+}

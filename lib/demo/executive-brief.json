@@ -1,0 +1,15 @@
+{
+  "title": "Executive Exposure Brief｜管理层暴露简报",
+  "score": 68,
+  "mainRisks": [
+    "过期测试系统",
+    "公开邮箱格式",
+    "仓库敏感配置提醒"
+  ],
+  "trustImpact": "客户信任与供应链审查会关注测试系统、凭证治理和邮件认证。",
+  "resourcePriority": [
+    "收敛管理入口",
+    "建立仓库密钥扫描",
+    "每月暴露面复查"
+  ]
+}

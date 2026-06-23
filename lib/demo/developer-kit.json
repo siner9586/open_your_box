@@ -1,0 +1,21 @@
+{
+  "title": "Founder / Developer Self-Defense Kit",
+  "checks": [
+    "GitHub 邮箱暴露",
+    "API Key 泄露",
+    ".env 误提交",
+    "Vercel / Netlify / Cloudflare 配置暴露",
+    "域名 DNS 配置",
+    "Demo 站测试接口暴露",
+    "Docker 镜像敏感信息",
+    "npm / PyPI 包信息暴露",
+    "README 私人联系方式"
+  ],
+  "launchChecklist": [
+    "开启 Secret Scanning",
+    "加入 Gitleaks CI",
+    "关闭测试 API",
+    "隐藏私人邮箱",
+    "为域名配置 SPF/DKIM/DMARC"
+  ]
+}

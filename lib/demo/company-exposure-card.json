@@ -1,0 +1,25 @@
+{
+  "title": "Company Attack Surface Card｜组织暴露面名片",
+  "domain": "example.com",
+  "domains": 1,
+  "subdomains": 18,
+  "publicEmails": 12,
+  "publicServices": 3,
+  "ports": [
+    "80/http",
+    "443/https",
+    "8443/admin-demo"
+  ],
+  "cloudDistribution": [
+    "demo-cloud",
+    "edge-cdn"
+  ],
+  "certificateSignals": 1,
+  "techStack": [
+    "Next.js",
+    "Nginx",
+    "GitHub Actions"
+  ],
+  "repoWarnings": 2,
+  "priority": "先收敛测试系统与远程管理面板。"
+}
