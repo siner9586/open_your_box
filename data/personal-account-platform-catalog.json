@@ -1,0 +1,1715 @@
+{
+  "version": "2026-06-23",
+  "purpose": "实名后本人账号足迹查询、找回、数据导出、解绑与注销辅助清单",
+  "selfOnly": true,
+  "inputTypes": [
+    "phone",
+    "email",
+    "username",
+    "nickname",
+    "qq_number",
+    "wechat_id",
+    "github_username",
+    "domain",
+    "public_profile_url"
+  ],
+  "resultTypes": [
+    "possible_account_presence",
+    "login_or_recovery_entry",
+    "data_export_entry",
+    "deletion_or_deactivation_entry",
+    "dependency_warning",
+    "cleanup_task"
+  ],
+  "platformCount": 100,
+  "coverageDomains": [
+    "blog_social",
+    "community_chat",
+    "community_forum",
+    "content_platform",
+    "creator_identity",
+    "creator_platform",
+    "creator_social",
+    "creator_tool",
+    "dating_social",
+    "developer",
+    "developer_ai",
+    "developer_community",
+    "developer_data",
+    "developer_hosting",
+    "developer_infra",
+    "ecommerce_social",
+    "finance_identity",
+    "finance_social",
+    "federated_social",
+    "gaming_social",
+    "global_identity",
+    "image_social",
+    "interest_community",
+    "knowledge_base",
+    "knowledge_community",
+    "lifestyle_social",
+    "livestream",
+    "local_life",
+    "messaging",
+    "microblog",
+    "music_social",
+    "newsletter",
+    "professional_social",
+    "productivity_social",
+    "short_video",
+    "social_messaging",
+    "social_network",
+    "travel_social",
+    "video_community",
+    "video_platform",
+    "work_social"
+  ],
+  "platforms": [
+    {
+      "id": "google",
+      "name": "Google / YouTube / Gmail",
+      "category": "global_identity",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://accounts.google.com/signin/v2/usernamerecovery",
+      "dataExportEntry": "https://takeout.google.com/",
+      "deletionEntry": "https://myaccount.google.com/deleteaccount",
+      "cleanupNote": "先使用 Google Takeout 备份，再删除 Google 账号或单独删除 Gmail 服务。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "apple",
+      "name": "Apple Account / iCloud",
+      "category": "global_identity",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone"
+      ],
+      "recoveryEntry": "https://account.apple.com/",
+      "dataExportEntry": "https://privacy.apple.com/",
+      "deletionEntry": "https://privacy.apple.com/",
+      "cleanupNote": "删除前先退出所有设备、处理订阅、iCloud 与查找设备。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "microsoft",
+      "name": "Microsoft / Outlook / Xbox",
+      "category": "global_identity",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "gamertag"
+      ],
+      "recoveryEntry": "https://account.live.com/username/recover",
+      "dataExportEntry": "https://account.microsoft.com/privacy",
+      "deletionEntry": "https://account.live.com/closeaccount.aspx",
+      "cleanupNote": "关闭前检查 Outlook、OneDrive、Xbox、Skype、订阅与余额。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "facebook",
+      "name": "Facebook",
+      "category": "social_network",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://www.facebook.com/login/identify",
+      "dataExportEntry": "https://accountscenter.facebook.com/info_and_permissions/",
+      "deletionEntry": "https://accountscenter.facebook.com/personal_info/account_ownership_and_control/",
+      "cleanupNote": "通过 Meta Accounts Center 下载信息并停用或删除账号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "instagram",
+      "name": "Instagram",
+      "category": "social_network",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://www.instagram.com/accounts/password/reset/",
+      "dataExportEntry": "https://accountscenter.instagram.com/info_and_permissions/",
+      "deletionEntry": "https://accountscenter.instagram.com/personal_info/account_ownership_and_control/",
+      "cleanupNote": "通过 Accounts Center 处理 Instagram 资料、下载与删除。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "threads",
+      "name": "Threads",
+      "category": "social_network",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://www.threads.com/login",
+      "dataExportEntry": "https://accountscenter.instagram.com/info_and_permissions/",
+      "deletionEntry": "https://accountscenter.instagram.com/personal_info/account_ownership_and_control/",
+      "cleanupNote": "与 Instagram/Meta 账号关联，删除前确认关联影响。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "x",
+      "name": "X / Twitter",
+      "category": "social_network",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://x.com/account/begin_password_reset",
+      "dataExportEntry": "https://x.com/settings/download_your_data",
+      "deletionEntry": "https://x.com/settings/deactivate",
+      "cleanupNote": "先下载 X 数据，停用后 30 天未登录才进入删除。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "linkedin",
+      "name": "LinkedIn",
+      "category": "professional_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://www.linkedin.com/checkpoint/rp/request-password-reset",
+      "dataExportEntry": "https://www.linkedin.com/mypreferences/d/download-my-data",
+      "deletionEntry": "https://www.linkedin.com/mypreferences/d/close-account",
+      "cleanupNote": "删除前导出个人档案、连接人与消息。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "tiktok",
+      "name": "TikTok",
+      "category": "short_video",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://www.tiktok.com/login/phone-or-email/email",
+      "dataExportEntry": "https://www.tiktok.com/setting/download-your-data",
+      "deletionEntry": "https://www.tiktok.com/setting/manage-account",
+      "cleanupNote": "通过账号设置下载数据并删除账号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "snapchat",
+      "name": "Snapchat",
+      "category": "social_messaging",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://accounts.snapchat.com/accounts/password_reset_request",
+      "dataExportEntry": "https://accounts.snapchat.com/accounts/downloadmydata",
+      "deletionEntry": "https://accounts.snapchat.com/accounts/delete_account",
+      "cleanupNote": "删除前导出 Snap 数据，确认 Bitmoji/Spotlight 等影响。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit",
+      "category": "community_forum",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.reddit.com/password",
+      "dataExportEntry": "https://www.reddit.com/settings/data-request",
+      "deletionEntry": "https://www.reddit.com/settings/account",
+      "cleanupNote": "删除账号不一定删除历史帖子，需先自行处理内容。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "pinterest",
+      "name": "Pinterest",
+      "category": "image_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.pinterest.com/password/reset/",
+      "dataExportEntry": "https://www.pinterest.com/settings/privacy",
+      "deletionEntry": "https://www.pinterest.com/settings/account-settings",
+      "cleanupNote": "可停用或关闭账号，删除前保存图板资料。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "tumblr",
+      "name": "Tumblr",
+      "category": "blog_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.tumblr.com/forgot_password",
+      "dataExportEntry": "https://www.tumblr.com/settings/account",
+      "deletionEntry": "https://www.tumblr.com/settings/account",
+      "cleanupNote": "删除前导出博客或备份内容。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "mastodon",
+      "name": "Mastodon",
+      "category": "federated_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username",
+        "instance"
+      ],
+      "recoveryEntry": "https://joinmastodon.org/",
+      "dataExportEntry": "manual_by_instance",
+      "deletionEntry": "manual_by_instance",
+      "cleanupNote": "需要按实例域名分别找回、导出和删除。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "discord",
+      "name": "Discord",
+      "category": "community_chat",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://discord.com/login",
+      "dataExportEntry": "https://support.discord.com/hc/en-us/articles/360004027692",
+      "deletionEntry": "https://discord.com/channels/@me",
+      "cleanupNote": "删除前转移服务器所有权并备份必要数据。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "telegram",
+      "name": "Telegram",
+      "category": "messaging",
+      "region": "global",
+      "identifiers": [
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://my.telegram.org/auth",
+      "dataExportEntry": "https://my.telegram.org/auth",
+      "deletionEntry": "https://my.telegram.org/delete",
+      "cleanupNote": "以手机号为核心，删除会影响云端聊天与群组身份。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp",
+      "category": "messaging",
+      "region": "global",
+      "identifiers": [
+        "phone"
+      ],
+      "recoveryEntry": "https://www.whatsapp.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "删除前导出重要聊天，处理备份与群组。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "signal",
+      "name": "Signal",
+      "category": "messaging",
+      "region": "global",
+      "identifiers": [
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://signal.org/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "注销/删除需在移动端操作，注意本地消息备份。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "wechat",
+      "name": "微信",
+      "category": "social_messaging",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "wechat_id",
+        "qq",
+        "email"
+      ],
+      "recoveryEntry": "in_app_account_recovery",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "路径通常在 我-设置-账号与安全-微信安全中心-注销账号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "qq",
+      "name": "QQ",
+      "category": "social_messaging",
+      "region": "china",
+      "identifiers": [
+        "qq_number",
+        "phone",
+        "email"
+      ],
+      "recoveryEntry": "https://aq.qq.com/",
+      "dataExportEntry": "https://id.qq.com/",
+      "deletionEntry": "in_app_or_security_center",
+      "cleanupNote": "先确认 QQ 邮箱、游戏、支付、群主身份等关联影响。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "qzone",
+      "name": "QQ空间",
+      "category": "social_network",
+      "region": "china",
+      "identifiers": [
+        "qq_number"
+      ],
+      "recoveryEntry": "https://qzone.qq.com/",
+      "dataExportEntry": "manual_export",
+      "deletionEntry": "manual_close_visibility",
+      "cleanupNote": "可优先关闭空间访问或清理日志相册，再决定 QQ 账号处理。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "weibo",
+      "name": "微博",
+      "category": "microblog",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://passport.weibo.cn/signin/forgot",
+      "dataExportEntry": "https://weibo.com/account/privacy",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "通过账号与安全/客服路径处理注销，先备份微博与相册。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "douyin",
+      "name": "抖音",
+      "category": "short_video",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "douyin_id",
+        "username"
+      ],
+      "recoveryEntry": "https://www.douyin.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "从账号与安全进入注销，注意抖音支付、店铺、创作者收益。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "kuaishou",
+      "name": "快手",
+      "category": "short_video",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "kuaishou_id",
+        "username"
+      ],
+      "recoveryEntry": "https://www.kuaishou.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "删除前处理作品、钱包、店铺、直播收益与绑定手机号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "xiaohongshu",
+      "name": "小红书",
+      "category": "lifestyle_social",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "red_id",
+        "username"
+      ],
+      "recoveryEntry": "https://www.xiaohongshu.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "先导出/保存笔记，处理收藏、订单与蒲公英/创作人权益。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "bilibili",
+      "name": "哔哩哔哩",
+      "category": "video_community",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "uid",
+        "username"
+      ],
+      "recoveryEntry": "https://passport.bilibili.com/",
+      "dataExportEntry": "in_app_or_web_settings",
+      "deletionEntry": "in_app_or_web_settings",
+      "cleanupNote": "删除前处理大会员、硬币、投稿、直播、创作收益与游戏账号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "zhihu",
+      "name": "知乎",
+      "category": "knowledge_community",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.zhihu.com/signin",
+      "dataExportEntry": "https://www.zhihu.com/settings/account",
+      "deletionEntry": "https://www.zhihu.com/settings/account",
+      "cleanupNote": "先处理回答、文章、收藏、盐选会员与机构号关联。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "douban",
+      "name": "豆瓣",
+      "category": "interest_community",
+      "region": "china",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://accounts.douban.com/passport/login",
+      "dataExportEntry": "manual_export",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前备份书影音记录、小组内容和日记相册。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "tieba",
+      "name": "百度贴吧",
+      "category": "community_forum",
+      "region": "china",
+      "identifiers": [
+        "baidu_account",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://passport.baidu.com/",
+      "dataExportEntry": "https://passport.baidu.com/center",
+      "deletionEntry": "https://passport.baidu.com/center",
+      "cleanupNote": "依托百度账号，处理网盘、文库、地图等关联服务。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "baidu",
+      "name": "百度账号",
+      "category": "global_identity",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://passport.baidu.com/",
+      "dataExportEntry": "https://passport.baidu.com/center",
+      "deletionEntry": "https://passport.baidu.com/center",
+      "cleanupNote": "删除前检查网盘、贴吧、文库、地图、智能云等资产。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "netease",
+      "name": "网易账号 / 网易邮箱",
+      "category": "global_identity",
+      "region": "china",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://reg.163.com/",
+      "dataExportEntry": "https://reg.163.com/",
+      "deletionEntry": "https://reg.163.com/",
+      "cleanupNote": "删除前确认邮箱、云音乐、游戏、严选和支付关联。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "sina",
+      "name": "新浪通行证",
+      "category": "global_identity",
+      "region": "china",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://login.sina.com.cn/",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "微博、新浪邮箱等可能共用通行证，需逐项确认。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "sohu",
+      "name": "搜狐账号",
+      "category": "global_identity",
+      "region": "china",
+      "identifiers": [
+        "email",
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://v4.passport.sohu.com/",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "检查搜狐邮箱、新闻、视频等历史账号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "toutiao",
+      "name": "今日头条",
+      "category": "content_platform",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://www.toutiao.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "与抖音/巨量/火山等字节账号体系可能有关联。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "xigua",
+      "name": "西瓜视频",
+      "category": "video_platform",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://www.ixigua.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "优先检查创作者收益、发布内容和字节账号关联。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "baijiahao",
+      "name": "百家号",
+      "category": "creator_platform",
+      "region": "china",
+      "identifiers": [
+        "baidu_account",
+        "phone"
+      ],
+      "recoveryEntry": "https://baijiahao.baidu.com/",
+      "dataExportEntry": "creator_settings",
+      "deletionEntry": "creator_settings",
+      "cleanupNote": "注销前处理收益、主体认证、内容与百度账号关系。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "wechat_public",
+      "name": "微信公众号/视频号",
+      "category": "creator_platform",
+      "region": "china",
+      "identifiers": [
+        "wechat",
+        "email",
+        "subject"
+      ],
+      "recoveryEntry": "https://mp.weixin.qq.com/",
+      "dataExportEntry": "mp_settings",
+      "deletionEntry": "mp_settings",
+      "cleanupNote": "涉及主体资质、管理员、收款、广告与粉丝资产，不能只按个人账号处理。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "category": "developer",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://github.com/password_reset",
+      "dataExportEntry": "https://github.com/settings/admin",
+      "deletionEntry": "https://github.com/settings/admin",
+      "cleanupNote": "删除前转移仓库、组织、Packages、Actions Secret 与 SSH/GPG key。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "gitlab",
+      "name": "GitLab",
+      "category": "developer",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://gitlab.com/users/password/new",
+      "dataExportEntry": "https://gitlab.com/-/user_settings/account",
+      "deletionEntry": "https://gitlab.com/-/user_settings/account",
+      "cleanupNote": "删除前转移项目、组、Runner、Token 与包。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "gitee",
+      "name": "Gitee",
+      "category": "developer",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://gitee.com/password/new",
+      "dataExportEntry": "https://gitee.com/profile/account_information",
+      "deletionEntry": "https://gitee.com/profile/account_information",
+      "cleanupNote": "处理仓库、企业、SSH Key、私人令牌与代码隐私。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "bitbucket",
+      "name": "Bitbucket",
+      "category": "developer",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://id.atlassian.com/login/resetpassword",
+      "dataExportEntry": "https://id.atlassian.com/manage-profile/privacy",
+      "deletionEntry": "https://id.atlassian.com/manage-profile/account-preferences",
+      "cleanupNote": "Atlassian 账号关联 Jira/Confluence/Trello。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "stackoverflow",
+      "name": "Stack Overflow",
+      "category": "developer_community",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://stackoverflow.com/users/account-recovery",
+      "dataExportEntry": "https://stackoverflow.com/legal/gdpr/request",
+      "deletionEntry": "https://stackoverflow.com/users/delete/current",
+      "cleanupNote": "删除前备份问答、声望、团队关联与开发者故事。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "npm",
+      "name": "npm",
+      "category": "developer",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.npmjs.com/forgot",
+      "dataExportEntry": "https://www.npmjs.com/settings/profile",
+      "deletionEntry": "https://www.npmjs.com/settings/profile",
+      "cleanupNote": "删除前转移包维护权、Token、组织和 2FA 恢复码。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "dockerhub",
+      "name": "Docker Hub",
+      "category": "developer",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://hub.docker.com/reset-password/",
+      "dataExportEntry": "https://app.docker.com/settings/personal-access-tokens",
+      "deletionEntry": "https://app.docker.com/settings/account",
+      "cleanupNote": "删除前处理镜像、组织、Token、自动构建。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "huggingface",
+      "name": "Hugging Face",
+      "category": "developer_ai",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://huggingface.co/forgot-password",
+      "dataExportEntry": "https://huggingface.co/settings/account",
+      "deletionEntry": "https://huggingface.co/settings/account",
+      "cleanupNote": "删除前处理模型、数据集、Spaces、Token 和组织。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "kaggle",
+      "name": "Kaggle",
+      "category": "developer_data",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.kaggle.com/account/login",
+      "dataExportEntry": "https://www.kaggle.com/settings",
+      "deletionEntry": "https://www.kaggle.com/settings",
+      "cleanupNote": "处理竞赛、Notebook、Dataset、API token。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "replit",
+      "name": "Replit",
+      "category": "developer",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://replit.com/forgot",
+      "dataExportEntry": "https://replit.com/account",
+      "deletionEntry": "https://replit.com/account",
+      "cleanupNote": "删除前导出 Repl、Secrets、Deployments、团队空间。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "category": "developer_hosting",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://vercel.com/login",
+      "dataExportEntry": "https://vercel.com/account",
+      "deletionEntry": "https://vercel.com/account",
+      "cleanupNote": "删除前处理项目、域名、环境变量、团队和账单。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "netlify",
+      "name": "Netlify",
+      "category": "developer_hosting",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://app.netlify.com/login",
+      "dataExportEntry": "https://app.netlify.com/user/settings",
+      "deletionEntry": "https://app.netlify.com/user/settings",
+      "cleanupNote": "删除前处理站点、域名、环境变量、团队和表单数据。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "cloudflare",
+      "name": "Cloudflare",
+      "category": "developer_infra",
+      "region": "global",
+      "identifiers": [
+        "email"
+      ],
+      "recoveryEntry": "https://dash.cloudflare.com/forgot-password",
+      "dataExportEntry": "https://dash.cloudflare.com/profile",
+      "deletionEntry": "https://dash.cloudflare.com/profile",
+      "cleanupNote": "删除前处理域名 DNS、Workers、Pages、R2、D1、Zero Trust 与账单。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "medium",
+      "name": "Medium",
+      "category": "blog_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://medium.com/m/signin",
+      "dataExportEntry": "https://medium.com/me/settings/security",
+      "deletionEntry": "https://medium.com/me/settings/security",
+      "cleanupNote": "删除前导出文章、处理订阅和出版物。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "wordpress",
+      "name": "WordPress.com",
+      "category": "blog_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://wordpress.com/log-in/lostpassword",
+      "dataExportEntry": "https://wordpress.com/me/account",
+      "deletionEntry": "https://wordpress.com/me/account",
+      "cleanupNote": "删除前导出站点、域名、订阅、Jetpack 连接。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "substack",
+      "name": "Substack",
+      "category": "newsletter",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://substack.com/sign-in",
+      "dataExportEntry": "https://substack.com/settings",
+      "deletionEntry": "https://substack.com/settings",
+      "cleanupNote": "删除前处理订阅、付费读者、邮件列表和 Stripe。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "category": "productivity_social",
+      "region": "global",
+      "identifiers": [
+        "email"
+      ],
+      "recoveryEntry": "https://www.notion.so/login",
+      "dataExportEntry": "https://www.notion.so/my-account",
+      "deletionEntry": "https://www.notion.so/my-account",
+      "cleanupNote": "删除前导出工作区、转移管理员和页面。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "yuque",
+      "name": "语雀",
+      "category": "knowledge_base",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.yuque.com/login",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前导出知识库、转移团队空间。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "jianshu",
+      "name": "简书",
+      "category": "blog_social",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.jianshu.com/sign_in",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前备份文章、评论、钱包和专题权限。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "csdn",
+      "name": "CSDN",
+      "category": "developer_community",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://passport.csdn.net/login",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前处理博客、下载资源、积分、学院课程。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "cnblogs",
+      "name": "博客园",
+      "category": "developer_community",
+      "region": "china",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://account.cnblogs.com/signin",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前导出博客、随笔、文章和评论。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "juejin",
+      "name": "掘金",
+      "category": "developer_community",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://juejin.cn/login",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前处理文章、沸点、收藏、创作者收益。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "segmentfault",
+      "name": "SegmentFault",
+      "category": "developer_community",
+      "region": "china",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://segmentfault.com/user/login",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前处理问答、文章、专栏和草稿。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube Channel",
+      "category": "video_platform",
+      "region": "global",
+      "identifiers": [
+        "google_account",
+        "channel_handle"
+      ],
+      "recoveryEntry": "https://accounts.google.com/",
+      "dataExportEntry": "https://takeout.google.com/",
+      "deletionEntry": "https://myaccount.google.com/deleteaccount",
+      "cleanupNote": "YouTube 依附 Google 账号，也可单独隐藏/删除频道。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "twitch",
+      "name": "Twitch",
+      "category": "livestream",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.twitch.tv/user/account-recovery",
+      "dataExportEntry": "https://www.twitch.tv/settings/security",
+      "deletionEntry": "https://www.twitch.tv/user/delete-account",
+      "cleanupNote": "删除前处理订阅、收益、频道点数、Prime 关联。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "category": "music_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.spotify.com/password-reset/",
+      "dataExportEntry": "https://www.spotify.com/account/privacy/",
+      "deletionEntry": "https://www.spotify.com/account/close/",
+      "cleanupNote": "删除前取消 Premium，保存歌单或迁移。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "netease_music",
+      "name": "网易云音乐",
+      "category": "music_social",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://music.163.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "删除前备份歌单、云盘、会员和评论。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "qq_music",
+      "name": "QQ音乐",
+      "category": "music_social",
+      "region": "china",
+      "identifiers": [
+        "qq",
+        "wechat",
+        "phone"
+      ],
+      "recoveryEntry": "https://y.qq.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "处理绿钻、歌单、数字专辑与 QQ/微信登录。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "steam",
+      "name": "Steam",
+      "category": "gaming_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://help.steampowered.com/",
+      "dataExportEntry": "https://help.steampowered.com/",
+      "deletionEntry": "https://help.steampowered.com/",
+      "cleanupNote": "删除前确认游戏库、库存、钱包余额、市场限制。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "epic",
+      "name": "Epic Games",
+      "category": "gaming_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.epicgames.com/help/",
+      "dataExportEntry": "https://www.epicgames.com/account/personal",
+      "deletionEntry": "https://www.epicgames.com/account/personal",
+      "cleanupNote": "处理游戏库、钱包、创作者、关联主机账号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "playstation",
+      "name": "PlayStation Network",
+      "category": "gaming_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "online_id"
+      ],
+      "recoveryEntry": "https://www.playstation.com/support/account/password-reset-psn/",
+      "dataExportEntry": "https://www.playstation.com/acct/management",
+      "deletionEntry": "support_request",
+      "cleanupNote": "删除/关闭前处理购买内容、订阅和主机绑定。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "xbox",
+      "name": "Xbox",
+      "category": "gaming_social",
+      "region": "global",
+      "identifiers": [
+        "microsoft_account",
+        "gamertag"
+      ],
+      "recoveryEntry": "https://account.live.com/",
+      "dataExportEntry": "https://account.microsoft.com/",
+      "deletionEntry": "https://account.live.com/closeaccount.aspx",
+      "cleanupNote": "依托 Microsoft 账号，关闭会影响 Xbox 与 Outlook/OneDrive。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "nintendo",
+      "name": "Nintendo Account",
+      "category": "gaming_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://accounts.nintendo.com/password/reset",
+      "dataExportEntry": "https://accounts.nintendo.com/",
+      "deletionEntry": "https://accounts.nintendo.com/",
+      "cleanupNote": "删除前处理 eShop、Switch 用户、云存档与余额。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "taobao",
+      "name": "淘宝/天猫",
+      "category": "ecommerce_social",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://login.taobao.com/member/login.jhtml",
+      "dataExportEntry": "https://member1.taobao.com/member/fresh/account_security.htm",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前处理订单、退款、发票、支付宝、88VIP、店铺。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "alipay",
+      "name": "支付宝",
+      "category": "finance_identity",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "real_name"
+      ],
+      "recoveryEntry": "https://auth.alipay.com/login/index.htm",
+      "dataExportEntry": "https://custweb.alipay.com/account/index.htm",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "实名金融账号，注销前处理余额、银行卡、花呗借呗、账单。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "jd",
+      "name": "京东",
+      "category": "ecommerce_social",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://passport.jd.com/new/login.aspx",
+      "dataExportEntry": "https://safe.jd.com/",
+      "deletionEntry": "in_app_or_web_settings",
+      "cleanupNote": "注销前处理订单、售后、白条、PLUS、发票和京东金融。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "pinduoduo",
+      "name": "拼多多",
+      "category": "ecommerce_social",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "wechat"
+      ],
+      "recoveryEntry": "https://mobile.yangkeduo.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "处理订单、售后、钱包、绑定微信/手机号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "meituan",
+      "name": "美团",
+      "category": "local_life",
+      "region": "china",
+      "identifiers": [
+        "phone"
+      ],
+      "recoveryEntry": "https://passport.meituan.com/account/unitivelogin",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "处理外卖、酒店、骑行、会员、钱包和发票。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "dianping",
+      "name": "大众点评",
+      "category": "local_life",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "username"
+      ],
+      "recoveryEntry": "https://account.dianping.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "与美团账号体系可能关联，处理评价、收藏和订单。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "eleme",
+      "name": "饿了么",
+      "category": "local_life",
+      "region": "china",
+      "identifiers": [
+        "phone",
+        "alipay"
+      ],
+      "recoveryEntry": "https://h5.ele.me/login/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "处理订单、会员、红包、支付宝/淘宝登录。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "trip",
+      "name": "携程 Trip.com",
+      "category": "travel_social",
+      "region": "china_global",
+      "identifiers": [
+        "phone",
+        "email"
+      ],
+      "recoveryEntry": "https://passport.ctrip.com/user/login",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "处理订单、积分、发票、常旅客与实名出行信息。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "fliggy",
+      "name": "飞猪",
+      "category": "travel_social",
+      "region": "china",
+      "identifiers": [
+        "taobao",
+        "alipay",
+        "phone"
+      ],
+      "recoveryEntry": "https://login.taobao.com/",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "依赖淘宝/支付宝，处理旅行订单和实名乘机人。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "airbnb",
+      "name": "Airbnb",
+      "category": "travel_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone"
+      ],
+      "recoveryEntry": "https://www.airbnb.com/login",
+      "dataExportEntry": "https://www.airbnb.com/account-settings/privacy-and-sharing",
+      "deletionEntry": "https://www.airbnb.com/account-settings",
+      "cleanupNote": "删除前处理行程、房东身份、税务、评价和支付。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "category": "work_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "workspace"
+      ],
+      "recoveryEntry": "https://slack.com/signin",
+      "dataExportEntry": "workspace_settings",
+      "deletionEntry": "workspace_settings",
+      "cleanupNote": "按 workspace 逐个处理，需联系管理员删除成员资料。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "category": "work_social",
+      "region": "global",
+      "identifiers": [
+        "email"
+      ],
+      "recoveryEntry": "https://zoom.us/forgot_password",
+      "dataExportEntry": "https://zoom.us/profile",
+      "deletionEntry": "https://zoom.us/profile",
+      "cleanupNote": "删除前处理会议、录制、订阅、SSO 与组织成员身份。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "teams",
+      "name": "Microsoft Teams",
+      "category": "work_social",
+      "region": "global",
+      "identifiers": [
+        "microsoft_account",
+        "email"
+      ],
+      "recoveryEntry": "https://account.live.com/",
+      "dataExportEntry": "https://account.microsoft.com/privacy",
+      "deletionEntry": "https://account.live.com/closeaccount.aspx",
+      "cleanupNote": "个人 Teams 依托 Microsoft；组织 Teams 需管理员处理。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "trello",
+      "name": "Trello",
+      "category": "work_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://trello.com/forgot",
+      "dataExportEntry": "https://id.atlassian.com/manage-profile",
+      "deletionEntry": "https://id.atlassian.com/manage-profile/account-preferences",
+      "cleanupNote": "Atlassian 账号关联 Jira/Confluence/Bitbucket。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "canva",
+      "name": "Canva",
+      "category": "creator_tool",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.canva.com/login/",
+      "dataExportEntry": "https://www.canva.com/settings/login-and-security",
+      "deletionEntry": "https://www.canva.com/settings/login-and-security",
+      "cleanupNote": "删除前导出设计、转移团队、处理订阅和品牌资产。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "figma",
+      "name": "Figma",
+      "category": "creator_tool",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.figma.com/login",
+      "dataExportEntry": "https://www.figma.com/settings",
+      "deletionEntry": "https://www.figma.com/settings",
+      "cleanupNote": "删除前转移文件、团队、插件、组织管理员权限。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "dribbble",
+      "name": "Dribbble",
+      "category": "creator_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://dribbble.com/session/new",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前备份作品、客户线索和订阅。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "behance",
+      "name": "Behance",
+      "category": "creator_social",
+      "region": "global",
+      "identifiers": [
+        "adobe_account",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.behance.net/",
+      "dataExportEntry": "https://account.adobe.com/privacy",
+      "deletionEntry": "https://account.adobe.com/privacy",
+      "cleanupNote": "依托 Adobe 账号，删除前处理作品、Creative Cloud、订阅。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "adobe",
+      "name": "Adobe Account",
+      "category": "creator_identity",
+      "region": "global",
+      "identifiers": [
+        "email"
+      ],
+      "recoveryEntry": "https://auth.services.adobe.com/",
+      "dataExportEntry": "https://account.adobe.com/privacy",
+      "deletionEntry": "https://account.adobe.com/privacy",
+      "cleanupNote": "删除前取消订阅、下载云文件、处理 Behance/Stock。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "quora",
+      "name": "Quora",
+      "category": "knowledge_community",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.quora.com/forgot_password",
+      "dataExportEntry": "https://www.quora.com/settings/privacy",
+      "deletionEntry": "https://www.quora.com/settings/privacy",
+      "cleanupNote": "删除前处理回答、Space、广告或订阅。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "goodreads",
+      "name": "Goodreads",
+      "category": "interest_community",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://www.goodreads.com/user/forgot_password",
+      "dataExportEntry": "https://www.goodreads.com/user/edit",
+      "deletionEntry": "https://www.goodreads.com/user/edit",
+      "cleanupNote": "删除前导出书单、评论和好友。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "imdb",
+      "name": "IMDb",
+      "category": "interest_community",
+      "region": "global",
+      "identifiers": [
+        "amazon_account",
+        "email"
+      ],
+      "recoveryEntry": "https://www.imdb.com/registration/signin",
+      "dataExportEntry": "https://www.imdb.com/privacy",
+      "deletionEntry": "amazon_account_settings",
+      "cleanupNote": "依托 Amazon 账号，处理评分、影单与评论。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon",
+      "category": "ecommerce_social",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone"
+      ],
+      "recoveryEntry": "https://www.amazon.com/ap/forgotpassword",
+      "dataExportEntry": "https://www.amazon.com/hz/privacy-central/data-requests/preview.html",
+      "deletionEntry": "https://www.amazon.com/privacy/data-deletion",
+      "cleanupNote": "删除前处理订单、Kindle、Prime、AWS、Audible 与余额。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "paypal",
+      "name": "PayPal",
+      "category": "finance_identity",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone"
+      ],
+      "recoveryEntry": "https://www.paypal.com/authflow/password-recovery/",
+      "dataExportEntry": "https://www.paypal.com/myaccount/settings/",
+      "deletionEntry": "https://www.paypal.com/myaccount/settings/",
+      "cleanupNote": "关闭前处理余额、银行卡、争议、订阅付款。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "wise",
+      "name": "Wise",
+      "category": "finance_identity",
+      "region": "global",
+      "identifiers": [
+        "email",
+        "phone"
+      ],
+      "recoveryEntry": "https://wise.com/login",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "support_request",
+      "cleanupNote": "金融账号需先处理余额、卡片、收款账户和身份资料。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "venmo",
+      "name": "Venmo",
+      "category": "finance_social",
+      "region": "global",
+      "identifiers": [
+        "phone",
+        "email",
+        "username"
+      ],
+      "recoveryEntry": "https://venmo.com/account/sign-in",
+      "dataExportEntry": "account_settings",
+      "deletionEntry": "account_settings",
+      "cleanupNote": "删除前处理余额、银行、公开交易隐私。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "tinder",
+      "name": "Tinder",
+      "category": "dating_social",
+      "region": "global",
+      "identifiers": [
+        "phone",
+        "email"
+      ],
+      "recoveryEntry": "https://tinder.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "先取消订阅，再在 App 内删除账号。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "bumble",
+      "name": "Bumble",
+      "category": "dating_social",
+      "region": "global",
+      "identifiers": [
+        "phone",
+        "email"
+      ],
+      "recoveryEntry": "https://bumble.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "删除前取消订阅并处理个人资料。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "tantan",
+      "name": "探探",
+      "category": "dating_social",
+      "region": "china",
+      "identifiers": [
+        "phone"
+      ],
+      "recoveryEntry": "https://tantanapp.com/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "删除前取消订阅、清理资料与相册。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    },
+    {
+      "id": "soul",
+      "name": "Soul",
+      "category": "dating_social",
+      "region": "china",
+      "identifiers": [
+        "phone"
+      ],
+      "recoveryEntry": "https://www.soulapp.cn/",
+      "dataExportEntry": "in_app_settings",
+      "deletionEntry": "in_app_settings",
+      "cleanupNote": "删除前处理会员、聊天记录、公开瞬间和钱包。",
+      "executionPolicy": "self_verified_user_only",
+      "automationLevel": "manual_or_official_flow_first"
+    }
+  ],
+  "scanPolicy": {
+    "publicSite": "demo_and_catalog_only",
+    "authenticatedMode": "only_query_identifiers_verified_by_current_user",
+    "storage": "store only normalized status, task state, timestamps and user-visible links; avoid raw sensitive evidence",
+    "abusePrevention": [
+      "per-user rate limit",
+      "identity binding",
+      "identifier ownership verification",
+      "audit log",
+      "export/delete my data",
+      "no anonymous bulk lookup"
+    ]
+  }
+}
