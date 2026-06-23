@@ -17,3 +17,4 @@ export async function getReport(context) { const report = find(context.params?.i
 export async function listReports() { return response({ reports: [...cache.values()].map(r => ({ id: r.id, scanId: r.scanId, reportType: r.reportType, riskScore: r.riskScore.total, createdAt: r.generatedAt })) }); }
 export async function exportReport(context) { const report = find(context.params?.id || ''); if (!report) return response({ error: { code: 'REPORT_NOT_FOUND' } }, 404); const f = new URL(context.request.url).searchParams.get('format'); if (f === 'md') return response(reportToMarkdown(report), 200, 'text/markdown; charset=utf-8'); if (f === 'csv') return response(reportToCsv(report), 200, 'text/csv; charset=utf-8'); return response(report); }
 export async function getTask() { return response({ status: 'not_found' }, 404); }
+export async function exportData() { return response({ reports: [...cache.values()] }); }
