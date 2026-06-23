@@ -1,14 +1,14 @@
 {
   "name": "open-your-box",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Open Your Box｜个人隐私自查与组织暴露面管理工作台",
+  "description": "Open Your Box｜本人、家庭与企业真实数字足迹和暴露面自查服务",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "build": "node scripts/build-site.mjs",
     "lint": "node scripts/lint-content.mjs",
-    "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/generate-demo-report.mjs",
+    "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/generate-demo-report.mjs && node --check src/scanners/core/runtime.mjs && node --check functions/_lib/api.js",
     "test": "node scripts/test.mjs",
     "e2e": "node scripts/test.mjs --e2e",
     "lighthouse:dry": "node scripts/lighthouse-dry.mjs",
@@ -22,6 +22,7 @@
     "defensive-osint",
     "exposure-management",
     "privacy",
+    "cloudflare-pages-functions",
     "security-awareness"
   ],
   "license": "MIT"
