@@ -1,0 +1,226 @@
+{
+  "generatedAt": "2026-06-23T14:53:28.230Z",
+  "scope": {
+    "site": "https://open-your-box.pages.dev",
+    "repository": "siner9586/open_your_box"
+  },
+  "routes": [
+    {
+      "path": "/",
+      "url": "https://open-your-box.pages.dev/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1372,
+      "contentFingerprint": "5efc25ae",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    },
+    {
+      "path": "/personal/",
+      "url": "https://open-your-box.pages.dev/personal/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1378,
+      "contentFingerprint": "3afd7614",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    },
+    {
+      "path": "/organization/",
+      "url": "https://open-your-box.pages.dev/organization/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1378,
+      "contentFingerprint": "3afd7614",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    },
+    {
+      "path": "/tools/",
+      "url": "https://open-your-box.pages.dev/tools/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1378,
+      "contentFingerprint": "3afd7614",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    },
+    {
+      "path": "/risk-model/",
+      "url": "https://open-your-box.pages.dev/risk-model/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1378,
+      "contentFingerprint": "3afd7614",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    },
+    {
+      "path": "/report/",
+      "url": "https://open-your-box.pages.dev/report/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1378,
+      "contentFingerprint": "3afd7614",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    },
+    {
+      "path": "/safety/",
+      "url": "https://open-your-box.pages.dev/safety/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1378,
+      "contentFingerprint": "3afd7614",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    },
+    {
+      "path": "/method/",
+      "url": "https://open-your-box.pages.dev/method/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "server": "cloudflare",
+      "cacheControl": "public, max-age=0, must-revalidate",
+      "securityHeaders": {
+        "contentSecurityPolicy": false,
+        "referrerPolicy": true,
+        "xContentTypeOptions": true,
+        "xFrameOptions": false,
+        "permissionsPolicy": false
+      },
+      "title": "Open Your Box｜打开自己的盒子",
+      "pageBytes": 1378,
+      "contentFingerprint": "3afd7614",
+      "hasSafetyBoundary": true,
+      "hasDemoMode": false,
+      "hasReportEntry": true
+    }
+  ],
+  "repo": {
+    "fileCount": 56,
+    "workflowFiles": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/demo-report.yml",
+      ".github/workflows/lighthouse.yml",
+      ".github/workflows/pages.yml",
+      ".github/workflows/playwright.yml",
+      ".github/workflows/real-self-audit.yml",
+      ".github/workflows/secret-scan.yml"
+    ],
+    "importantStatus": {
+      "README.md": true,
+      "SECURITY.md": true,
+      "PRIVACY.md": true,
+      ".env.example": true,
+      "package.json": true,
+      "scripts/run-shodan.py": true
+    },
+    "secretHygiene": {
+      "checkedTextFiles": 56,
+      "suspiciousPatternCount": 1,
+      "suspiciousPatternFiles": [
+        ".env.example"
+      ]
+    },
+    "safetyDocs": {
+      "readmeHasDefensiveScope": true,
+      "securityHasBoundary": true,
+      "privacyHasLocalParsing": true
+    }
+  },
+  "grade": {
+    "score": 42,
+    "level": "high",
+    "failedRoutes": 0,
+    "missingSafety": 0,
+    "missingHeaders": 24,
+    "suspicious": 1,
+    "missingDocs": 0
+  }
+}
