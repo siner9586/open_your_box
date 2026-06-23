@@ -1,0 +1,27 @@
+name: Scheduled Authorized Review
+
+on:
+  schedule:
+    - cron: '18 22 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run build
+      - name: Adapter configuration summary
+        env:
+          SHODAN_API_KEY: ${{ secrets.SHODAN_API_KEY }}
+          HIBP_API_KEY: ${{ secrets.HIBP_API_KEY }}
+        run: |
+          node -e "console.log('authorized review configuration loaded')"
+          node -e "console.log('shodan=' + Boolean(process.env.SHODAN_API_KEY) + ', hibp=' + Boolean(process.env.HIBP_API_KEY))"
