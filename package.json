@@ -8,7 +8,7 @@
     "dev": "node scripts/dev-server.mjs",
     "build": "node scripts/build-site.mjs",
     "lint": "node scripts/lint-content.mjs",
-    "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/generate-demo-report.mjs && node --check src/scanners/core/runtime.mjs && node --check functions/_lib/api.js",
+    "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/generate-demo-report.mjs && node --check src/scanners/core/runtime.mjs && node --check src/scanners/core/external-adapters.mjs && node --check functions/_lib/api.js",
     "test": "node scripts/test.mjs",
     "e2e": "node scripts/test.mjs --e2e",
     "lighthouse:dry": "node scripts/lighthouse-dry.mjs",
