@@ -1,5 +1,6 @@
 import { runPersonalScan, runCompanyScan, runSocialScan, runAccountsScan, reportToMarkdown, reportToCsv, scoreRisk } from '../../src/scanners/core/runtime.mjs';
 import { runExternalChecks } from '../../src/scanners/core/external-adapters.mjs';
+import { runHibpEmailRange } from '../../src/scanners/core/hibp-adapter.mjs';
 
 const cache = new Map();
 const response = (data, status = 200, type = 'application/json; charset=utf-8') => new Response(type.includes('json') ? JSON.stringify(data, null, 2) : data, { status, headers: { 'content-type': type, 'cache-control': 'no-store' } });
@@ -30,7 +31,7 @@ export async function handleScan(context, mode) {
   payload.authorization ||= { mode: 'private', verified: false };
   const runner = { personal: runPersonalScan, company: runCompanyScan, social: runSocialScan, accounts: runAccountsScan }[mode];
   const report = await runner(payload, context.env);
-  const extra = await runExternalChecks(mode, payload, context.env, report.scanId);
+  const extra = mode === 'personal' && payload.identifiers?.email ? await runHibpEmailRange(payload.identifiers.email, context.env, Boolean(payload.authorization?.verified), report.scanId) : await runExternalChecks(mode, payload, context.env, report.scanId);
   if (extra.length) {
     const seen = new Set((report.findings || []).map(f => `${f.source}:${f.category}:${f.title}`));
     for (const item of extra) if (!seen.has(`${item.source}:${item.category}:${item.title}`)) report.findings.push(item);
