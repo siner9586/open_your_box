@@ -30,6 +30,28 @@ function gate(request, env = {}) {
 }
 function ensureCatalog(payload = {}) { payload.platformCatalog = Array.isArray(payload.platformCatalog) && payload.platformCatalog.length ? payload.platformCatalog : DEFAULT_PLATFORM_CATALOG; return payload; }
 
+function accountStatusMeta(task = {}) {
+  const raw = `${task.accountStatus || ''} ${task.taskType || ''} ${task.notes || ''} ${task.evidenceSource || ''}`.toLowerCase();
+  if (/confirmed|password_manager/.test(raw)) return { statusLabel: '已确认有账号/登录记录', statusLevel: 'high', evidenceSource: 'user_import_login_record', statusReason: '你提供的密码管理器、账号导入或登录记录中出现该平台。' };
+  if (/mailbox|browser|platform_export|possible/.test(raw)) return { statusLabel: '可能存在账号', statusLevel: 'medium', evidenceSource: 'user_import_trace', statusReason: '你提供的邮箱、浏览器、书签、历史或平台导出元信息中出现该平台线索。' };
+  if (/candidate_from_username|username_review|username_nickname_candidate|candidate/.test(raw)) return { statusLabel: '候选待确认', statusLevel: 'low', evidenceSource: 'username_nickname_catalog_candidate', statusReason: '仅根据用户名/昵称和平台目录生成候选任务，不代表已经确认存在账号。' };
+  return { statusLabel: '待人工确认', statusLevel: 'info', evidenceSource: 'manual_review_required', statusReason: '当前证据不足，需要通过官方入口人工确认。' };
+}
+function enrichAccountStatuses(report = {}) {
+  report.accountTasks = (report.accountTasks || []).map(task => ({ ...task, ...accountStatusMeta(task) }));
+  const summary = { '已确认有账号/登录记录': 0, '可能存在账号': 0, '候选待确认': 0, '待人工确认': 0 };
+  for (const task of report.accountTasks) summary[task.statusLabel] = (summary[task.statusLabel] || 0) + 1;
+  report.accountStatusSummary = summary;
+  report.platformAccountStatus = report.accountTasks.map(t => ({ platformId: t.platformId || '', platformName: t.platformName || '', status: t.statusLabel, evidenceSource: t.evidenceSource, reason: t.statusReason, actionUrl: t.actionUrl || t.recoveryEntry || t.dataExportEntry || t.deletionEntry || '' })).slice(0, 300);
+  report.accountStatusLegend = {
+    confirmed: '已确认有账号/登录记录：只用于用户上传/导入材料中出现明确登录记录的平台。',
+    possible: '可能存在账号：来自邮箱、浏览器、书签、历史、导出元信息等间接线索。',
+    candidate: '候选待确认：仅由用户名/昵称与平台目录生成，不等同于真实账号命中。',
+    unknown: '待人工确认：没有足够证据，需要走官方入口核验。'
+  };
+  return report;
+}
+
 async function runDb(statement, binds = []) { return statement.bind(...binds).run(); }
 async function saveReport(env = {}, report = {}) {
   const d = db(env);
@@ -42,15 +64,15 @@ async function saveReport(env = {}, report = {}) {
     await runDb(d.prepare('insert or replace into jobs (id,user_id,subject_type,subject_hash,mode,status,progress,started_at,finished_at,error_message,created_at) values (?,?,?,?,?,?,?,?,?,?,?)'), [report.scanId, userId, report.reportType, await hashIdentifier(subject, env.HASH_SALT || 'open-your-box'), report.reportType, 'completed', 100, created, created, '', created]);
     await runDb(d.prepare('delete from findings where job_id = ?'), [report.scanId]);
     for (const finding of report.findings || []) await runDb(d.prepare('insert or replace into findings (id,job_id,user_id,source,category,severity,confidence,title,summary,evidence_type,evidence_preview,evidence_ref,remediation_json,created_at) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'), [finding.id, report.scanId, userId, finding.source, finding.category, finding.severity, finding.confidence, finding.title, finding.summary, finding.evidenceType, finding.evidencePreview, finding.evidenceRef || '', JSON.stringify(finding.remediation || {}), finding.createdAt || created]);
-    for (const task of report.accountTasks || []) await runDb(d.prepare('insert or replace into account_tasks (id,user_id,platform_id,platform_name,account_status,task_type,task_status,action_url,notes,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?)'), [task.id, userId, task.platformId || '', task.platformName || '', task.accountStatus || 'possible', task.taskType || 'review', task.taskStatus || 'todo', task.actionUrl || task.recoveryEntry || task.dataExportEntry || task.deletionEntry || '', `${report.scanId} · ${task.notes || ''}`.slice(0, 900), task.createdAt || created, task.updatedAt || created]);
+    for (const task of report.accountTasks || []) await runDb(d.prepare('insert or replace into account_tasks (id,user_id,platform_id,platform_name,account_status,task_type,task_status,action_url,notes,created_at,updated_at) values (?,?,?,?,?,?,?,?,?,?,?)'), [task.id, userId, task.platformId || '', task.platformName || '', task.statusLabel || task.accountStatus || 'possible', task.taskType || 'review', task.taskStatus || 'todo', task.actionUrl || task.recoveryEntry || task.dataExportEntry || task.deletionEntry || '', `${report.scanId} · ${task.statusLabel || ''} · ${task.statusReason || ''} · ${task.notes || ''}`.slice(0, 900), task.createdAt || created, task.updatedAt || created]);
     return { persisted: true };
   } catch (error) { return { persisted: false, error: { code: 'D1_WRITE_FAILED', message: safeMsg(error) } }; }
 }
 async function readReport(env = {}, id = '') {
-  const local = findLocal(id); if (local) return local;
+  const local = findLocal(id); if (local) return enrichAccountStatuses(local);
   const d = db(env); if (!d?.prepare) return null;
   const key = cleanId(id);
-  try { const row = await d.prepare('select report_json from reports where id = ? or job_id = ? or id = ? limit 1').bind(id, key, `report_${key}`).first(); return row?.report_json ? JSON.parse(row.report_json) : null; } catch { return null; }
+  try { const row = await d.prepare('select report_json from reports where id = ? or job_id = ? or id = ? limit 1').bind(id, key, `report_${key}`).first(); return row?.report_json ? enrichAccountStatuses(JSON.parse(row.report_json)) : null; } catch { return null; }
 }
 
 function usernameNicknameMatrix(payload = {}, scanId = 'scan') {
@@ -67,28 +89,10 @@ function usernameNicknameMatrix(payload = {}, scanId = 'scan') {
   const tasks = candidates.map(p => ({
     ...accountTaskFromPlatform(p, 'username_nickname_candidate', 'candidate'),
     id: localId(`task_username_${p.id || 'platform'}`),
-    accountStatus: 'candidate_from_username',
-    taskType: 'username_review',
-    taskStatus: 'todo',
-    actionUrl: p.recoveryEntry || p.dataExportEntry || p.deletionEntry || '',
-    notes: `username_nickname_candidate: ${p.cleanupNote || 'Use official recovery, data export and deletion flows to confirm whether this is your account.'} 原始用户名/昵称仅用于本次匹配，报告中以脱敏摘要呈现。`,
-    createdAt: now(),
-    updatedAt: now()
+    accountStatus: 'candidate_from_username', taskType: 'username_review', taskStatus: 'todo', actionUrl: p.recoveryEntry || p.dataExportEntry || p.deletionEntry || '',
+    notes: `username_nickname_candidate: ${p.cleanupNote || 'Use official recovery, data export and closing flows to confirm whether this is your account.'} 原始用户名/昵称仅用于本次匹配，报告中以脱敏摘要呈现。`, createdAt: now(), updatedAt: now()
   }));
-  const finding = createFinding({
-    scanId,
-    subjectType: 'account',
-    source: 'username_nickname_matrix',
-    category: 'platform_candidate_matrix',
-    severity: candidates.length >= 80 ? 'medium' : 'low',
-    confidence: 'medium',
-    title: `用户名/昵称平台候选矩阵：${candidates.length} 个平台`,
-    summary: '测试阶段根据现有社交与应用平台目录生成候选账号任务；不执行陌生人隐私查询，不保存原始昵称，不绕过平台限制。',
-    evidenceType: 'self_declared_identifier',
-    evidencePreview: `${masked} · ${candidates.slice(0, 18).map(p => p.name).join(', ')}`,
-    affectedIdentifierMasked: masked,
-    remediation: { actionType: 'account_cleanup', label: '逐个平台确认本人账号', steps: ['优先使用官方找回入口确认是否为本人账号', '确认后导出数据并开启多因素认证', '对不用的平台执行解绑、停用或注销'] }
-  });
+  const finding = createFinding({ scanId, subjectType: 'account', source: 'username_nickname_matrix', category: 'platform_candidate_matrix', severity: candidates.length >= 80 ? 'medium' : 'low', confidence: 'medium', title: `用户名/昵称平台候选矩阵：${candidates.length} 个平台`, summary: '测试阶段根据现有社交与应用平台目录生成候选账号任务；不执行陌生人隐私查询，不保存原始昵称，不绕过平台限制。', evidenceType: 'self_declared_identifier', evidencePreview: `${masked} · ${candidates.slice(0, 18).map(p => p.name).join(', ')}`, affectedIdentifierMasked: masked, remediation: { actionType: 'account_cleanup', label: '逐个平台确认本人账号', steps: ['优先使用官方找回入口确认是否为本人账号', '确认后导出数据并开启多因素认证', '对不用的平台执行解绑、停用或注销'] } });
   return { findings: [finding], tasks };
 }
 
@@ -134,15 +138,11 @@ export async function handleScan(context, mode) {
     let extra = [];
     if (mode === 'personal') {
       if (payload.identifiers?.email) extra.push(...await runHibpEmailRange(payload.identifiers.email, context.env, Boolean(payload.authorization?.verified), report.scanId));
-      const matrix = usernameNicknameMatrix(payload, report.scanId);
-      extra.push(...matrix.findings);
-      mergeTasks(report, matrix.tasks);
-      const username = String(payload.identifiers?.username || payload.identifiers?.nickname || '').trim();
-      if (username && !payload.identifiers?.github) extra.push(...await scanGithubPublic(username, context.env, report.scanId));
-    } else if (mode === 'company') {
-      extra = [...(isVerifiedCompany(payload) && payload.domain ? await scanCertificateTransparencyReal(payload.domain, report.scanId) : []), ...await runExternalChecks(mode, payload, context.env, report.scanId)];
-    }
+      const matrix = usernameNicknameMatrix(payload, report.scanId); extra.push(...matrix.findings); mergeTasks(report, matrix.tasks);
+      const username = String(payload.identifiers?.username || payload.identifiers?.nickname || '').trim(); if (username && !payload.identifiers?.github) extra.push(...await scanGithubPublic(username, context.env, report.scanId));
+    } else if (mode === 'company') extra = [...(isVerifiedCompany(payload) && payload.domain ? await scanCertificateTransparencyReal(payload.domain, report.scanId) : []), ...await runExternalChecks(mode, payload, context.env, report.scanId)];
     mergeExtraFindings(report, extra, mode === 'company' ? 'company' : 'personal');
+    enrichAccountStatuses(report);
     cache.set(report.scanId, report);
     const persistence = await saveReport(context.env, report);
     const status = persistence.persisted ? 'completed' : 'completed_not_persisted';
@@ -157,24 +157,9 @@ export async function listReports(context = {}) {
 }
 export async function exportReport(context) { const report = await readReport(context.env, context.params?.id || ''); if (!report) return jsonError('REPORT_NOT_FOUND', 404, 'Report not found.'); const format = new URL(context.request.url).searchParams.get('format'); if (format === 'md') return response(reportToMarkdown(report), 200, 'text/markdown; charset=utf-8'); if (format === 'csv') return response(reportToCsv(report), 200, 'text/csv; charset=utf-8'); return response(report); }
 export async function getTask() { return jsonError('TASK_NOT_FOUND', 404, 'Task endpoint is reserved.'); }
-export async function handleUpload(context, kind) {
-  const denied = gate(context.request, context.env); if (denied) return denied;
-  try { const text = await context.request.text(); const uploads = kind === 'mailbox' ? { mailboxText: text } : kind === 'browser-history' ? { browserText: text } : kind === 'platform-export' ? { platformExportText: text } : { passwordManagerText: text }; const report = await runPersonalScan(ensureCatalog({ uploads, authorization: { mode: 'private', verified: false } }), context.env); cache.set(report.scanId, report); const persistence = await saveReport(context.env, report); return response({ status: 'processed', kind, reportId: report.id, taskId: report.scanId, ...persistence, report }); } catch (error) { return jsonError('UPLOAD_PROCESS_FAILED', 500, 'Upload text could not be processed.', safeMsg(error)); }
-}
-export async function exportData(context = {}) {
-  const d = db(context.env || {});
-  if (d?.prepare) { try { const rows = await d.prepare('select report_json from reports where user_id = ? order by created_at desc limit 100').bind('local').all(); return response({ reports: (rows.results || []).map(r => JSON.parse(r.report_json)) }); } catch (error) { return jsonError('D1_EXPORT_FAILED', 500, 'Could not export report data.', safeMsg(error)); } }
-  return response({ reports: [...cache.values()] });
-}
-export async function deleteData(context = {}) {
-  const denied = context.request ? gate(context.request, context.env) : null; if (denied) return denied;
-  cache.clear(); const d = db(context.env || {});
-  if (d?.prepare) { try { await d.prepare('delete from findings where user_id = ?').bind('local').run(); await d.prepare('delete from account_tasks where user_id = ?').bind('local').run(); await d.prepare('delete from jobs where user_id = ?').bind('local').run(); await d.prepare('delete from reports where user_id = ?').bind('local').run(); return response({ status: 'cleared', persisted: true }); } catch (error) { return jsonError('D1_DELETE_FAILED', 500, 'Could not delete test report data.', safeMsg(error)); } }
-  return response({ status: 'cleared', persisted: false });
-}
+export async function handleUpload(context, kind) { const denied = gate(context.request, context.env); if (denied) return denied; try { const text = await context.request.text(); const uploads = kind === 'mailbox' ? { mailboxText: text } : kind === 'browser-history' ? { browserText: text } : kind === 'platform-export' ? { platformExportText: text } : { passwordManagerText: text }; const report = await runPersonalScan(ensureCatalog({ uploads, authorization: { mode: 'private', verified: false } }), context.env); enrichAccountStatuses(report); cache.set(report.scanId, report); const persistence = await saveReport(context.env, report); return response({ status: 'processed', kind, reportId: report.id, taskId: report.scanId, ...persistence, report }); } catch (error) { return jsonError('UPLOAD_PROCESS_FAILED', 500, 'Upload text could not be processed.', safeMsg(error)); } }
+export async function exportData(context = {}) { const d = db(context.env || {}); if (d?.prepare) { try { const rows = await d.prepare('select report_json from reports where user_id = ? order by created_at desc limit 100').bind('local').all(); return response({ reports: (rows.results || []).map(r => enrichAccountStatuses(JSON.parse(r.report_json))) }); } catch (error) { return jsonError('D1_EXPORT_FAILED', 500, 'Could not export report data.', safeMsg(error)); } } return response({ reports: [...cache.values()].map(enrichAccountStatuses) }); }
+export async function deleteData(context = {}) { const denied = context.request ? gate(context.request, context.env) : null; if (denied) return denied; cache.clear(); const d = db(context.env || {}); if (d?.prepare) { try { await d.prepare('delete from findings where user_id = ?').bind('local').run(); await d.prepare('delete from account_tasks where user_id = ?').bind('local').run(); await d.prepare('delete from jobs where user_id = ?').bind('local').run(); await d.prepare('delete from reports where user_id = ?').bind('local').run(); return response({ status: 'cleared', persisted: true }); } catch (error) { return jsonError('D1_DELETE_FAILED', 500, 'Could not delete test report data.', safeMsg(error)); } } return response({ status: 'cleared', persisted: false }); }
 async function txtRecords(domain = '') { const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=TXT`, { headers: { accept: 'application/dns-json' } }); if (!res.ok) throw new Error(`DNS TXT ${res.status}`); const data = await res.json(); return (data.Answer || []).map(r => String(r.data || '').replace(/^"|"$/g, '').replace(/"\s+"/g, '')); }
 function cleanDomain(value = '') { return String(value || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/[^a-z0-9.-]/g, '').replace(/^\.+|\.+$/g, ''); }
-export async function verifyDnsTxt(context = {}) {
-  const denied = gate(context.request, context.env); if (denied) return denied;
-  try { const input = await body(context.request); const domain = cleanDomain(input.domain || ''); if (!domain) return jsonError('INVALID_DOMAIN', 400, 'A domain is required.'); const salt = context.env?.HASH_SALT || 'open-your-box-dns-txt'; const token = input.token || `oyb-${(await hashIdentifier(domain, salt)).slice(0, 24)}`; const recordName = `_openyourbox.${domain}`; if (!input.check) return response({ status: 'token_generated', domain, recordName, token, txtValue: token, instructions: `Add TXT ${recordName} = ${token}, then call this endpoint again with check:true.` }); const records = await txtRecords(recordName); const verified = records.some(value => value.includes(token)); return response({ status: verified ? 'verified' : 'pending', domain, recordName, token, verified, authorization: verified ? { mode: 'private', verified: true, method: 'dns_txt' } : { mode: 'private', verified: false, method: 'dns_txt_pending' } }); } catch (error) { return jsonError('DNS_TXT_VERIFY_FAILED', 500, 'DNS TXT verification failed.', safeMsg(error)); }
-}
+export async function verifyDnsTxt(context = {}) { const denied = gate(context.request, context.env); if (denied) return denied; try { const input = await body(context.request); const domain = cleanDomain(input.domain || ''); if (!domain) return jsonError('INVALID_DOMAIN', 400, 'A domain is required.'); const salt = context.env?.HASH_SALT || 'open-your-box-dns-txt'; const token = input.token || `oyb-${(await hashIdentifier(domain, salt)).slice(0, 24)}`; const recordName = `_openyourbox.${domain}`; if (!input.check) return response({ status: 'token_generated', domain, recordName, token, txtValue: token, instructions: `Add TXT ${recordName} = ${token}, then call this endpoint again with check:true.` }); const records = await txtRecords(recordName); const verified = records.some(value => value.includes(token)); return response({ status: verified ? 'verified' : 'pending', domain, recordName, token, verified, authorization: verified ? { mode: 'private', verified: true, method: 'dns_txt' } : { mode: 'private', verified: false, method: 'dns_txt_pending' } }); } catch (error) { return jsonError('DNS_TXT_VERIFY_FAILED', 500, 'DNS TXT verification failed.', safeMsg(error)); } }
