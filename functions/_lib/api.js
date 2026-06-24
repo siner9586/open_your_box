@@ -30,7 +30,6 @@ function gate(request, env = {}) {
 }
 function ensureCatalog(payload = {}) { payload.platformCatalog = Array.isArray(payload.platformCatalog) && payload.platformCatalog.length ? payload.platformCatalog : DEFAULT_PLATFORM_CATALOG; return payload; }
 function normalizeIdentifierList(p = {}) { return (p.identifiers || []).map(x => String(x).toLowerCase()); }
-
 function accountStatusMeta(task = {}) {
   if (task.statusLabel) return { statusLabel: task.statusLabel, statusLevel: task.statusLevel || 'info', evidenceSource: task.evidenceSource || 'provided_status', statusReason: task.statusReason || '按报告证据判断。' };
   const raw = `${task.accountStatus || ''} ${task.taskType || ''} ${task.notes || ''} ${task.evidenceSource || ''}`.toLowerCase();
@@ -51,7 +50,6 @@ function enrichAccountStatuses(report = {}) {
   report.accountStatusLegend = { confirmed: '已确认有账号/登录记录：用户上传/导入材料中出现明确登录记录或官方授权结果。', possible: '可能存在账号：来自邮箱、浏览器、书签、历史、导出元信息等间接线索。', candidate: '候选待确认：仅用户名/昵称候选才进入账号任务；邮箱/手机号目录覆盖不会被当成账号状态。', noEvidence: '未发现证据：已检查的数据源未发现线索，不代表绝对没有账号。', skipped: '跳过：缺少 API Key、授权、实名、上传数据或平台不支持。', failed: '查询失败：网络、平台风控或接口错误，不能据此判断不存在。', unknown: '待人工确认：没有足够证据，需要走官方入口核验。' };
   return report;
 }
-
 async function runDb(statement, binds = []) { return statement.bind(...binds).run(); }
 async function saveReport(env = {}, report = {}) {
   const d = db(env);
@@ -74,26 +72,67 @@ async function readReport(env = {}, id = '') {
   const key = cleanId(id);
   try { const row = await d.prepare('select report_json from reports where id = ? or job_id = ? or id = ? limit 1').bind(id, key, `report_${key}`).first(); return row?.report_json ? enrichAccountStatuses(JSON.parse(row.report_json)) : null; } catch { return null; }
 }
-
+async function dnsJson(name = '', type = 'MX') {
+  const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}`, { headers: { accept: 'application/dns-json' } });
+  if (!res.ok) throw new Error(`DNS ${type} HTTP ${res.status}`);
+  return res.json();
+}
+function emailDomain(email = '') { const m = String(email || '').trim().toLowerCase().match(/^[^@\s]+@([a-z0-9.-]+\.[a-z]{2,})$/); return m?.[1] || ''; }
+async function checkEmailMx(email = '', scanId = 'scan') {
+  const domain = emailDomain(email);
+  if (!domain) return { finding: createFinding({ scanId, source: 'email_identifier_api', category: 'format_error', severity: 'low', confidence: 'verified', title: '邮箱格式无效', summary: '邮箱格式不符合基本规则，未执行 MX 检查。', evidenceType: 'self_declared_identifier', evidencePreview: 'invalid email format' }), status: { identifierType: 'email', label: '邮箱', provider: 'dns_mx', apiExecuted: false, deterministicResult: true, valid: false, reason: '邮箱格式无效。' } };
+  try {
+    const data = await dnsJson(domain, 'MX');
+    const records = Array.isArray(data.Answer) ? data.Answer : [];
+    const valid = records.length > 0;
+    return { finding: createFinding({ scanId, source: 'email_identifier_api', category: 'mx_lookup', severity: valid ? 'info' : 'medium', confidence: 'verified', title: valid ? '邮箱域名 MX 检查通过' : '邮箱域名未发现 MX 记录', summary: valid ? '已通过 DNS 查询确认邮箱域名存在可收信 MX 记录；这只能证明域名具备收信能力，不能证明该邮箱注册过某个平台。' : 'DNS 查询未发现邮箱域名 MX 记录；请确认邮箱是否填写正确。', evidenceType: 'dns_mx', evidencePreview: `${domain} · mx_records=${records.length}`, affectedIdentifierMasked: maskIdentifier(email, 'email') }), status: { identifierType: 'email', label: '邮箱', provider: 'dns_mx', apiExecuted: true, deterministicResult: true, valid, reason: valid ? '已确认邮箱域名具备收信 MX 记录；不是账号注册命中。' : '未发现邮箱域名 MX 记录；不是账号注册命中。' } };
+  } catch (error) {
+    return { finding: createFinding({ scanId, source: 'email_identifier_api', category: 'mx_lookup_error', severity: 'info', confidence: 'low', title: '邮箱域名 MX 检查失败', summary: safeMsg(error), evidenceType: 'dns_mx', evidencePreview: domain, affectedIdentifierMasked: maskIdentifier(email, 'email') }), status: { identifierType: 'email', label: '邮箱', provider: 'dns_mx', apiExecuted: true, deterministicResult: false, valid: null, reason: `MX 查询失败：${safeMsg(error)}` } };
+  }
+}
+async function lookupPhone(phone = '', env = {}, scanId = 'scan') {
+  const raw = String(phone || '').trim();
+  if (!raw) return null;
+  const masked = maskIdentifier(raw, 'phone');
+  const configured = env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN ? 'twilio' : env.NUMVERIFY_API_KEY ? 'numverify' : env.ABSTRACT_PHONE_API_KEY ? 'abstractapi' : '';
+  if (!configured) return { finding: createFinding({ scanId, source: 'phone_identifier_api', category: 'adapter_status', severity: 'info', confidence: 'verified', title: '手机号 Lookup adapter 未配置', summary: '未配置 TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN、NUMVERIFY_API_KEY 或 ABSTRACT_PHONE_API_KEY；因此没有执行手机号有效性/归属地 Lookup，更没有执行任何平台账号命中查询。', evidenceType: 'phone_lookup', evidencePreview: masked, affectedIdentifierMasked: masked }), status: { identifierType: 'phone', label: '手机号', provider: 'none', apiExecuted: false, deterministicResult: false, valid: null, reason: '手机号 Lookup adapter 未配置；未执行真实手机号 API。' } };
+  try {
+    let provider = configured, valid = null, detail = '';
+    if (configured === 'twilio') {
+      const auth = btoa(`${env.TWILIO_ACCOUNT_SID}:${env.TWILIO_AUTH_TOKEN}`);
+      const res = await fetch(`https://lookups.twilio.com/v2/PhoneNumbers/${encodeURIComponent(raw)}`, { headers: { authorization: `Basic ${auth}` } });
+      const data = await res.json().catch(() => ({}));
+      valid = res.ok && Boolean(data.phone_number); detail = data.country_code || data.national_format || `HTTP ${res.status}`;
+    } else if (configured === 'numverify') {
+      const res = await fetch(`https://apilayer.net/api/validate?access_key=${encodeURIComponent(env.NUMVERIFY_API_KEY)}&number=${encodeURIComponent(raw)}&format=1`);
+      const data = await res.json().catch(() => ({}));
+      valid = data.valid === true; detail = [data.country_name, data.carrier, data.line_type].filter(Boolean).join(' · ') || `valid=${String(data.valid)}`;
+    } else if (configured === 'abstractapi') {
+      const res = await fetch(`https://phonevalidation.abstractapi.com/v1/?api_key=${encodeURIComponent(env.ABSTRACT_PHONE_API_KEY)}&phone=${encodeURIComponent(raw)}`);
+      const data = await res.json().catch(() => ({}));
+      valid = data.valid === true; detail = [data.country?.name, data.carrier, data.type].filter(Boolean).join(' · ') || `valid=${String(data.valid)}`;
+    }
+    return { finding: createFinding({ scanId, source: 'phone_identifier_api', category: 'lookup_summary', severity: valid ? 'info' : 'medium', confidence: 'verified', title: valid ? '手机号 Lookup 已执行：有效' : '手机号 Lookup 已执行：未确认有效', summary: `已调用 ${provider} Lookup。该结果只能说明号码格式/归属/运营商类信息，不能证明该手机号注册过某个平台。`, evidenceType: 'phone_lookup', evidencePreview: `${masked} · ${provider} · ${detail || 'no detail'}`, affectedIdentifierMasked: masked }), status: { identifierType: 'phone', label: '手机号', provider, apiExecuted: true, deterministicResult: true, valid, reason: `已执行 ${provider} Lookup：${detail || '无摘要'}。这不是平台账号命中。` } };
+  } catch (error) {
+    return { finding: createFinding({ scanId, source: 'phone_identifier_api', category: 'lookup_error', severity: 'info', confidence: 'low', title: '手机号 Lookup 执行失败', summary: safeMsg(error), evidenceType: 'phone_lookup', evidencePreview: masked, affectedIdentifierMasked: masked }), status: { identifierType: 'phone', label: '手机号', provider: configured, apiExecuted: true, deterministicResult: false, valid: null, reason: `手机号 Lookup 失败：${safeMsg(error)}` } };
+  }
+}
+async function identifierApiStatus(payload = {}, env = {}, scanId = 'scan') {
+  const ids = payload.identifiers || {}, findings = [], status = [];
+  if (ids.email) { const mx = await checkEmailMx(ids.email, scanId); findings.push(mx.finding); status.push(mx.status); }
+  if (ids.phone) { const phone = await lookupPhone(ids.phone, env, scanId); if (phone) { findings.push(phone.finding); status.push(phone.status); } }
+  return { findings, status };
+}
 function identifierCoverageMatrix(payload = {}, scanId = 'scan') {
-  const ids = payload.identifiers || {};
-  const catalog = Array.isArray(payload.platformCatalog) ? payload.platformCatalog : [];
-  const inputs = [
-    { key: 'email', label: '邮箱', identifier: 'email', value: String(ids.email || '').trim() },
-    { key: 'phone', label: '手机号', identifier: 'phone', value: String(ids.phone || '').trim() }
-  ].filter(x => x.value);
+  const ids = payload.identifiers || {}, catalog = Array.isArray(payload.platformCatalog) ? payload.platformCatalog : [];
+  const inputs = [{ key: 'email', label: '邮箱', identifier: 'email', value: String(ids.email || '').trim() }, { key: 'phone', label: '手机号', identifier: 'phone', value: String(ids.phone || '').trim() }].filter(x => x.value);
   if (!inputs.length) return { findings: [], coverage: [], truth: [] };
   const findings = [], coverageMap = new Map(), truth = [];
   for (const input of inputs) {
     const platforms = catalog.filter(p => normalizeIdentifierList(p).includes(input.identifier)).slice(0, 180);
-    truth.push({ identifierType: input.key, label: input.label, apiExecuted: false, deterministicResult: false, reason: `本轮没有调用任何可确认${input.label}是否注册某个平台的官方 API 或实名验证接口。` });
-    for (const p of platforms) {
-      const key = p.id || p.name || p.domain || `${input.identifier}_${coverageMap.size}`;
-      const item = coverageMap.get(key) || { platformId: p.id || '', platformName: p.name || '', domain: p.domain || '', supportedIdentifiers: new Set(), recoveryEntry: p.recoveryEntry || '', dataExportEntry: p.dataExportEntry || '', deletionEntry: p.deletionEntry || '', note: p.cleanupNote || '' };
-      item.supportedIdentifiers.add(input.label);
-      coverageMap.set(key, item);
-    }
-    findings.push(createFinding({ scanId, subjectType: 'account', source: `${input.key}_identifier_coverage`, category: 'coverage_status', severity: 'info', confidence: 'verified', title: `${input.label}未执行账号命中查询`, summary: `本轮没有调用可确认${input.label}是否注册某个平台的官方 API、运营商接口或实名验证接口；下方仅展示平台目录中的通用找回/导出/注销入口覆盖范围。`, evidenceType: 'self_declared_identifier', evidencePreview: `${input.label}已脱敏 · ${platforms.length} 个通用入口`, affectedIdentifierMasked: maskIdentifier(input.value, input.key), remediation: { actionType: 'verify_with_official_flow', label: `使用官方入口逐项确认${input.label}`, steps: ['不要把覆盖范围当成账号命中', '优先使用官方找回入口验证是否本人账号', '确认后再导出数据、解绑或注销'] } }));
+    truth.push({ identifierType: input.key, label: input.label, provider: 'platform_catalog', apiExecuted: false, deterministicResult: false, reason: `平台目录覆盖只表示这些平台通常提供${input.label}找回/绑定入口；没有查询该${input.label}是否真实注册。` });
+    for (const p of platforms) { const key = p.id || p.name || p.domain || `${input.identifier}_${coverageMap.size}`; const item = coverageMap.get(key) || { platformId: p.id || '', platformName: p.name || '', domain: p.domain || '', supportedIdentifiers: new Set(), recoveryEntry: p.recoveryEntry || '', dataExportEntry: p.dataExportEntry || '', deletionEntry: p.deletionEntry || '', note: p.cleanupNote || '' }; item.supportedIdentifiers.add(input.label); coverageMap.set(key, item); }
+    findings.push(createFinding({ scanId, subjectType: 'account', source: `${input.key}_identifier_coverage`, category: 'coverage_status', severity: 'info', confidence: 'verified', title: `${input.label}平台目录覆盖说明`, summary: `下方仅展示平台目录中的通用找回/导出/注销入口覆盖范围；不是账号命中、不是实际注册结果。`, evidenceType: 'self_declared_identifier', evidencePreview: `${input.label}已脱敏 · ${platforms.length} 个通用入口`, affectedIdentifierMasked: maskIdentifier(input.value, input.key), remediation: { actionType: 'verify_with_official_flow', label: `使用官方入口逐项确认${input.label}`, steps: ['不要把覆盖范围当成账号命中', '优先使用官方找回入口验证是否本人账号', '确认后再导出数据、解绑或注销'] } }));
   }
   const coverage = [...coverageMap.values()].map(item => ({ ...item, supportedIdentifiers: [...item.supportedIdentifiers], status: '目录覆盖，不是账号命中', certainty: 'not_deterministic', evidenceSource: 'platform_catalog_only', reason: '该平台目录声明支持邮箱/手机号等入口；未查询该号码或邮箱是否真实注册。' })).slice(0, 300);
   return { findings, coverage, truth };
@@ -108,46 +147,34 @@ function usernameNicknameMatrix(payload = {}, scanId = 'scan') {
   const finding = createFinding({ scanId, subjectType: 'account', source: 'username_nickname_matrix', category: 'platform_candidate_matrix', severity: candidates.length >= 80 ? 'medium' : 'low', confidence: 'medium', title: `用户名/昵称平台候选矩阵：${candidates.length} 个平台`, summary: '测试阶段根据现有社交与应用平台目录生成候选账号任务；不执行陌生人隐私查询，不保存原始昵称，不绕过平台限制。', evidenceType: 'self_declared_identifier', evidencePreview: `${masked} · ${candidates.slice(0, 18).map(p => p.name).join(', ')}`, affectedIdentifierMasked: masked, remediation: { actionType: 'account_cleanup', label: '逐个平台确认本人账号', steps: ['优先使用官方找回入口确认是否为本人账号', '确认后导出数据并开启多因素认证', '对不用的平台执行解绑、停用或注销'] } });
   return { findings: [finding], tasks };
 }
-
 function isVerifiedCompany(payload = {}) { return Boolean(payload.authorization?.verified || ['manual_admin_test', 'manual_admin', 'cloudflare_zone', 'dns_txt'].includes(payload.authorization?.method)); }
 async function scanCertificateTransparencyReal(domain = '', scanId = 'scan') {
   const clean = value => String(value || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].replace(/[^a-z0-9.-]/g, '').replace(/^\.+|\.+$/g, '');
   const d = clean(domain); if (!d) return [];
   try {
-    const res = await fetch(`https://crt.sh/?q=${encodeURIComponent(`%.${d}`)}&output=json`, { headers: { 'user-agent': 'OpenYourBox-CTSummary/1.0' } });
-    if (!res.ok) throw new Error(`crt.sh HTTP ${res.status}`);
-    const rows = await res.json();
-    const names = [...new Set((Array.isArray(rows) ? rows : []).flatMap(r => String(r.name_value || '').split(/\n+/)).map(clean).filter(x => x && (x === d || x.endsWith(`.${d}`))))].slice(0, 500);
-    const suspicious = names.filter(x => /(dev|test|stage|staging|admin|vpn|internal|old|backup|legacy|uat)/i.test(x));
+    const res = await fetch(`https://crt.sh/?q=${encodeURIComponent(`%.${d}`)}&output=json`, { headers: { 'user-agent': 'OpenYourBox-CTSummary/1.0' } }); if (!res.ok) throw new Error(`crt.sh HTTP ${res.status}`);
+    const rows = await res.json(); const names = [...new Set((Array.isArray(rows) ? rows : []).flatMap(r => String(r.name_value || '').split(/\n+/)).map(clean).filter(x => x && (x === d || x.endsWith(`.${d}`))))].slice(0, 500); const suspicious = names.filter(x => /(dev|test|stage|staging|admin|vpn|internal|old|backup|legacy|uat)/i.test(x));
     return [{ id: localId('finding_ct'), scanId, subjectType: 'domain', source: 'certificate_transparency', category: 'subdomain_inventory', severity: suspicious.length ? 'medium' : names.length > 50 ? 'low' : 'info', confidence: 'verified', title: `CT subdomain summary: ${d}`, summary: `Certificate Transparency returned ${names.length} unique domain names; suspicious naming samples ${suspicious.length}. Raw CT rows are not stored.`, evidenceType: 'certificate_transparency', evidencePreview: `sample=${names.slice(0, 12).map(x => x.split('.').length > 2 ? `*.${x.split('.').slice(-2).join('.')}` : x).join(', ') || 'none'}; suspicious=${suspicious.slice(0, 8).map(x => x.split('.').length > 2 ? `*.${x.split('.').slice(-2).join('.')}` : x).join(', ') || 'none'}`, remediation: { actionType: 'review_asset', label: 'Review CT subdomains', steps: ['Confirm each subdomain is owned', 'Retire stale hosts', 'Review admin/vpn/internal-like names'] }, createdAt: now() }];
   } catch (error) { return [{ id: localId('finding_ct_error'), scanId, subjectType: 'domain', source: 'certificate_transparency', category: 'adapter_error', severity: 'info', confidence: 'low', title: 'CT lookup failed', summary: safeMsg(error), evidenceType: 'certificate_transparency', evidencePreview: d, remediation: { actionType: 'review', label: 'Retry CT lookup', steps: ['Retry later or verify with another CT data source'] }, createdAt: now() }]; }
 }
 function mergeExtraFindings(report, extra = [], subjectType = 'personal') { if (!extra.length) return report; const seen = new Set((report.findings || []).map(f => `${f.source}:${f.category}:${f.title}`)); for (const item of extra) { const key = `${item.source}:${item.category}:${item.title}`; if (!seen.has(key)) { report.findings.push(item); seen.add(key); } } report.riskScore = scoreRisk(report.findings, subjectType); report.dataSources = [...new Set([...(report.dataSources || []), ...extra.map(f => f.source)])]; report.remediationSteps = [...new Set(report.findings.flatMap(f => f.remediation?.steps || []))].slice(0, 20); return report; }
 function mergeTasks(report, tasks = []) { if (!tasks.length) return report; const seen = new Set((report.accountTasks || []).map(t => `${t.platformId}:${t.taskType}:${t.platformName}:${t.evidenceSource || ''}`)); for (const task of tasks) { const key = `${task.platformId}:${task.taskType}:${task.platformName}:${task.evidenceSource || ''}`; if (!seen.has(key)) { report.accountTasks.push(task); seen.add(key); } } return report; }
-
 export async function handleScan(context, mode) {
   const denied = gate(context.request, context.env); if (denied) return denied;
   try {
-    const payload = ensureCatalog(await body(context.request));
-    payload.authorization ||= { mode: 'private', verified: false };
-    const runner = { personal: runPersonalScan, company: runCompanyScan, social: runSocialScan, accounts: runAccountsScan }[mode];
-    if (!runner) return jsonError('INVALID_SCAN_MODE', 400, 'Unsupported scan mode.');
-    const report = await runner(payload, context.env);
-    if (mode === 'personal') report.findings = (report.findings || []).filter(f => f.source !== 'hibp');
-    if (mode === 'company') report.findings = (report.findings || []).filter(f => f.source !== 'shodan' && !(f.source === 'certificate_transparency' && /adapter ready/i.test(f.title || '')));
+    const payload = ensureCatalog(await body(context.request)); payload.authorization ||= { mode: 'private', verified: false };
+    const runner = { personal: runPersonalScan, company: runCompanyScan, social: runSocialScan, accounts: runAccountsScan }[mode]; if (!runner) return jsonError('INVALID_SCAN_MODE', 400, 'Unsupported scan mode.');
+    const report = await runner(payload, context.env); if (mode === 'personal') report.findings = (report.findings || []).filter(f => f.source !== 'hibp'); if (mode === 'company') report.findings = (report.findings || []).filter(f => f.source !== 'shodan' && !(f.source === 'certificate_transparency' && /adapter ready/i.test(f.title || '')));
     let extra = [];
     if (mode === 'personal') {
+      const apiStatus = await identifierApiStatus(payload, context.env, report.scanId); extra.push(...apiStatus.findings); report.identifierApiStatus = apiStatus.status;
       if (payload.identifiers?.email) extra.push(...await runHibpEmailRange(payload.identifiers.email, context.env, Boolean(payload.authorization?.verified), report.scanId));
-      const coverage = identifierCoverageMatrix(payload, report.scanId); extra.push(...coverage.findings); report.identifierCoverageSuggestions = coverage.coverage; report.identifierTruthStatement = coverage.truth;
+      const coverage = identifierCoverageMatrix(payload, report.scanId); extra.push(...coverage.findings); report.identifierCoverageSuggestions = coverage.coverage; report.identifierTruthStatement = [...apiStatus.status, ...coverage.truth];
       const matrix = usernameNicknameMatrix(payload, report.scanId); extra.push(...matrix.findings); mergeTasks(report, matrix.tasks);
       const username = String(payload.identifiers?.username || payload.identifiers?.nickname || '').trim(); if (username && !payload.identifiers?.github) extra.push(...await scanGithubPublic(username, context.env, report.scanId));
     } else if (mode === 'company') extra = [...(isVerifiedCompany(payload) && payload.domain ? await scanCertificateTransparencyReal(payload.domain, report.scanId) : []), ...await runExternalChecks(mode, payload, context.env, report.scanId)];
-    mergeExtraFindings(report, extra, mode === 'company' ? 'company' : 'personal');
-    enrichAccountStatuses(report);
-    cache.set(report.scanId, report);
-    const persistence = await saveReport(context.env, report);
-    const status = persistence.persisted ? 'completed' : 'completed_not_persisted';
-    return response({ status, taskId: report.scanId, reportId: report.id, ...persistence, report });
+    mergeExtraFindings(report, extra, mode === 'company' ? 'company' : 'personal'); enrichAccountStatuses(report); cache.set(report.scanId, report);
+    const persistence = await saveReport(context.env, report); const status = persistence.persisted ? 'completed' : 'completed_not_persisted'; return response({ status, taskId: report.scanId, reportId: report.id, ...persistence, report });
   } catch (error) { return jsonError('SCAN_FAILED', 500, 'Scan failed with a sanitized runtime error.', safeMsg(error)); }
 }
 export async function getReport(context) { const report = await readReport(context.env, context.params?.id || ''); return report ? response(report) : jsonError('REPORT_NOT_FOUND', 404, 'Report not found.'); }
