@@ -39,7 +39,7 @@ function accountStatusMeta(task = {}) {
   if (/no_match|not_found|zero|未发现/.test(raw)) return { statusLabel: '未发现证据', statusLevel: 'info', evidenceSource: 'no_evidence_found', statusReason: '已检查的当前数据源未发现该平台线索，不代表平台绝对没有账号。' };
   if (/confirmed|password_manager/.test(raw)) return { statusLabel: '已确认有账号/登录记录', statusLevel: 'high', evidenceSource: 'user_import_login_record', statusReason: '你提供的密码管理器、账号导入或登录记录中出现该平台。' };
   if (/mailbox|browser|platform_export|possible/.test(raw)) return { statusLabel: '可能存在账号', statusLevel: 'medium', evidenceSource: 'user_import_trace', statusReason: '你提供的邮箱、浏览器、书签、历史或平台导出元信息中出现该平台线索。' };
-  if (/candidate_from_email|candidate_from_phone|candidate_from_identifier|email_identifier|phone_identifier|identifier_review|candidate_from_username|username_review|username_nickname_candidate|candidate/.test(raw)) return { statusLabel: '候选待确认', statusLevel: 'low', evidenceSource: 'identifier_catalog_candidate', statusReason: '仅根据你输入的邮箱、手机号、用户名/昵称和平台目录生成候选任务，不代表已经确认存在账号。' };
+  if (/candidate_from_username|username_review|username_nickname_candidate|candidate/.test(raw)) return { statusLabel: '候选待确认', statusLevel: 'low', evidenceSource: 'username_nickname_catalog_candidate', statusReason: '仅根据用户名/昵称和平台目录生成候选任务，不代表已经确认存在账号。' };
   return { statusLabel: '待人工确认', statusLevel: 'info', evidenceSource: 'manual_review_required', statusReason: '当前证据不足，需要通过官方入口人工确认。' };
 }
 function enrichAccountStatuses(report = {}) {
@@ -48,7 +48,7 @@ function enrichAccountStatuses(report = {}) {
   for (const task of report.accountTasks) summary[task.statusLabel] = (summary[task.statusLabel] || 0) + 1;
   report.accountStatusSummary = summary;
   report.platformAccountStatus = report.accountTasks.map(t => ({ platformId: t.platformId || '', platformName: t.platformName || '', status: t.statusLabel, statusLevel: t.statusLevel, evidenceSource: t.evidenceSource, reason: t.statusReason, actionUrl: t.actionUrl || t.recoveryEntry || t.dataExportEntry || t.deletionEntry || '' })).slice(0, 300);
-  report.accountStatusLegend = { confirmed: '已确认有账号/登录记录：用户上传/导入材料中出现明确登录记录或官方授权结果。', possible: '可能存在账号：来自邮箱、浏览器、书签、历史、导出元信息等间接线索。', candidate: '候选待确认：由邮箱、手机号、用户名/昵称与平台目录生成，不等同于真实账号命中。', noEvidence: '未发现证据：已检查的数据源未发现线索，不代表绝对没有账号。', skipped: '跳过：缺少 API Key、授权、实名、上传数据或平台不支持。', failed: '查询失败：网络、平台风控或接口错误，不能据此判断不存在。', unknown: '待人工确认：没有足够证据，需要走官方入口核验。' };
+  report.accountStatusLegend = { confirmed: '已确认有账号/登录记录：用户上传/导入材料中出现明确登录记录或官方授权结果。', possible: '可能存在账号：来自邮箱、浏览器、书签、历史、导出元信息等间接线索。', candidate: '候选待确认：仅用户名/昵称候选才进入账号任务；邮箱/手机号目录覆盖不会被当成账号状态。', noEvidence: '未发现证据：已检查的数据源未发现线索，不代表绝对没有账号。', skipped: '跳过：缺少 API Key、授权、实名、上传数据或平台不支持。', failed: '查询失败：网络、平台风控或接口错误，不能据此判断不存在。', unknown: '待人工确认：没有足够证据，需要走官方入口核验。' };
   return report;
 }
 
@@ -75,29 +75,28 @@ async function readReport(env = {}, id = '') {
   try { const row = await d.prepare('select report_json from reports where id = ? or job_id = ? or id = ? limit 1').bind(id, key, `report_${key}`).first(); return row?.report_json ? enrichAccountStatuses(JSON.parse(row.report_json)) : null; } catch { return null; }
 }
 
-function identifierCandidateMatrix(payload = {}, scanId = 'scan') {
+function identifierCoverageMatrix(payload = {}, scanId = 'scan') {
   const ids = payload.identifiers || {};
   const catalog = Array.isArray(payload.platformCatalog) ? payload.platformCatalog : [];
   const inputs = [
     { key: 'email', label: '邮箱', identifier: 'email', value: String(ids.email || '').trim() },
     { key: 'phone', label: '手机号', identifier: 'phone', value: String(ids.phone || '').trim() }
   ].filter(x => x.value);
-  if (!inputs.length) return { findings: [], tasks: [] };
-  const findings = [], platformMap = new Map();
+  if (!inputs.length) return { findings: [], coverage: [], truth: [] };
+  const findings = [], coverageMap = new Map(), truth = [];
   for (const input of inputs) {
     const platforms = catalog.filter(p => normalizeIdentifierList(p).includes(input.identifier)).slice(0, 180);
+    truth.push({ identifierType: input.key, label: input.label, apiExecuted: false, deterministicResult: false, reason: `本轮没有调用任何可确认${input.label}是否注册某个平台的官方 API 或实名验证接口。` });
     for (const p of platforms) {
-      const key = p.id || p.name || p.domain || `${input.identifier}_${platformMap.size}`;
-      const item = platformMap.get(key) || { platform: p, labels: new Set(), keys: new Set() };
-      item.labels.add(input.label); item.keys.add(input.key); platformMap.set(key, item);
+      const key = p.id || p.name || p.domain || `${input.identifier}_${coverageMap.size}`;
+      const item = coverageMap.get(key) || { platformId: p.id || '', platformName: p.name || '', domain: p.domain || '', supportedIdentifiers: new Set(), recoveryEntry: p.recoveryEntry || '', dataExportEntry: p.dataExportEntry || '', deletionEntry: p.deletionEntry || '', note: p.cleanupNote || '' };
+      item.supportedIdentifiers.add(input.label);
+      coverageMap.set(key, item);
     }
-    findings.push(createFinding({ scanId, subjectType: 'account', source: `${input.key}_identifier_matrix`, category: 'platform_candidate_matrix', severity: platforms.length >= 80 ? 'medium' : 'low', confidence: 'medium', title: `${input.label}平台候选矩阵：${platforms.length} 个平台`, summary: `测试阶段根据你输入的${input.label}和平台目录生成候选账号任务；不代表已确认注册。`, evidenceType: 'self_declared_identifier', evidencePreview: `${input.label}已脱敏 · ${platforms.slice(0, 18).map(p => p.name).join(', ') || '无候选平台'}`, affectedIdentifierMasked: maskIdentifier(input.value, input.key), remediation: { actionType: 'account_cleanup', label: `逐个平台确认${input.label}关联账号`, steps: ['优先使用官方找回入口确认是否为本人账号', '确认后导出数据并开启多因素认证', '对不用的平台执行解绑、停用或注销'] } }));
+    findings.push(createFinding({ scanId, subjectType: 'account', source: `${input.key}_identifier_coverage`, category: 'coverage_status', severity: 'info', confidence: 'verified', title: `${input.label}未执行账号命中查询`, summary: `本轮没有调用可确认${input.label}是否注册某个平台的官方 API、运营商接口或实名验证接口；下方仅展示平台目录中的通用找回/导出/注销入口覆盖范围。`, evidenceType: 'self_declared_identifier', evidencePreview: `${input.label}已脱敏 · ${platforms.length} 个通用入口`, affectedIdentifierMasked: maskIdentifier(input.value, input.key), remediation: { actionType: 'verify_with_official_flow', label: `使用官方入口逐项确认${input.label}`, steps: ['不要把覆盖范围当成账号命中', '优先使用官方找回入口验证是否本人账号', '确认后再导出数据、解绑或注销'] } }));
   }
-  const tasks = [...platformMap.values()].map(item => {
-    const p = item.platform, labels = [...item.labels], keys = [...item.keys];
-    return { ...accountTaskFromPlatform(p, `${keys.join('_')}_identifier_candidate`, 'candidate'), id: localId(`task_identifier_${p.id || 'platform'}`), accountStatus: 'candidate_from_identifier', taskType: 'identifier_review', taskStatus: 'todo', actionUrl: p.recoveryEntry || p.dataExportEntry || p.deletionEntry || '', evidenceSource: `${keys.join('_')}_identifier_catalog_candidate`, statusLabel: '候选待确认', statusLevel: 'low', statusReason: `仅根据你输入的${labels.join('/')}和平台目录生成候选任务，不代表已经确认存在账号。`, notes: `${labels.join('/')}候选：请使用官方找回、导出或注销入口确认该平台是否存在本人账号。${p.cleanupNote || ''}`, createdAt: now(), updatedAt: now() };
-  });
-  return { findings, tasks };
+  const coverage = [...coverageMap.values()].map(item => ({ ...item, supportedIdentifiers: [...item.supportedIdentifiers], status: '目录覆盖，不是账号命中', certainty: 'not_deterministic', evidenceSource: 'platform_catalog_only', reason: '该平台目录声明支持邮箱/手机号等入口；未查询该号码或邮箱是否真实注册。' })).slice(0, 300);
+  return { findings, coverage, truth };
 }
 function usernameNicknameMatrix(payload = {}, scanId = 'scan') {
   const ids = payload.identifiers || {}, username = String(ids.username || ids.nickname || '').trim();
@@ -139,7 +138,7 @@ export async function handleScan(context, mode) {
     let extra = [];
     if (mode === 'personal') {
       if (payload.identifiers?.email) extra.push(...await runHibpEmailRange(payload.identifiers.email, context.env, Boolean(payload.authorization?.verified), report.scanId));
-      const idMatrix = identifierCandidateMatrix(payload, report.scanId); extra.push(...idMatrix.findings); mergeTasks(report, idMatrix.tasks);
+      const coverage = identifierCoverageMatrix(payload, report.scanId); extra.push(...coverage.findings); report.identifierCoverageSuggestions = coverage.coverage; report.identifierTruthStatement = coverage.truth;
       const matrix = usernameNicknameMatrix(payload, report.scanId); extra.push(...matrix.findings); mergeTasks(report, matrix.tasks);
       const username = String(payload.identifiers?.username || payload.identifiers?.nickname || '').trim(); if (username && !payload.identifiers?.github) extra.push(...await scanGithubPublic(username, context.env, report.scanId));
     } else if (mode === 'company') extra = [...(isVerifiedCompany(payload) && payload.domain ? await scanCertificateTransparencyReal(payload.domain, report.scanId) : []), ...await runExternalChecks(mode, payload, context.env, report.scanId)];
@@ -150,8 +149,7 @@ export async function handleScan(context, mode) {
     const status = persistence.persisted ? 'completed' : 'completed_not_persisted';
     return response({ status, taskId: report.scanId, reportId: report.id, ...persistence, report });
   } catch (error) { return jsonError('SCAN_FAILED', 500, 'Scan failed with a sanitized runtime error.', safeMsg(error)); }
-}
-export async function getReport(context) { const report = await readReport(context.env, context.params?.id || ''); return report ? response(report) : jsonError('REPORT_NOT_FOUND', 404, 'Report not found.'); }
+}\nexport async function getReport(context) { const report = await readReport(context.env, context.params?.id || ''); return report ? response(report) : jsonError('REPORT_NOT_FOUND', 404, 'Report not found.'); }
 export async function listReports(context = {}) { const d = db(context.env || {}); if (d?.prepare) { try { const rows = await d.prepare('select id, job_id, report_type, risk_score, created_at from reports order by created_at desc limit 50').all(); return response({ reports: (rows.results || []).map(r => ({ id: r.id, scanId: r.job_id, reportType: r.report_type, riskScore: r.risk_score, createdAt: r.created_at })) }); } catch (error) { return jsonError('D1_READ_FAILED', 500, 'Could not read reports from D1.', safeMsg(error)); } } return response({ reports: [...cache.values()].map(r => ({ id: r.id, scanId: r.scanId, reportType: r.reportType, riskScore: r.riskScore?.total || 0, createdAt: r.generatedAt })) }); }
 export async function exportReport(context) { const report = await readReport(context.env, context.params?.id || ''); if (!report) return jsonError('REPORT_NOT_FOUND', 404, 'Report not found.'); const format = new URL(context.request.url).searchParams.get('format'); if (format === 'md') return response(reportToMarkdown(report), 200, 'text/markdown; charset=utf-8'); if (format === 'csv') return response(reportToCsv(report), 200, 'text/csv; charset=utf-8'); return response(report); }
 export async function getTask() { return jsonError('TASK_NOT_FOUND', 404, 'Task endpoint is reserved.'); }
