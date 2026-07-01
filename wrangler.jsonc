@@ -1,0 +1,24 @@
+{
+  "name": "open-your-box",
+  "compatibility_date": "2026-07-01",
+  "pages_build_output_dir": "dist",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "open-your-box-db",
+      "database_id": "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+    }
+  ],
+  "vars": {
+    "ENABLE_PHONE_DEEP_SCAN": "false",
+    "ENABLE_DEMO_ADAPTERS": "true",
+    "MAX_TARGETS_PER_JOB": "10",
+    "MAX_ITEMS_PER_RUN": "25",
+    "MAX_SUBMISSIONS_PER_HOUR": "20",
+    "IDENTITY_PROVIDER_MODE": "manual",
+    "ALLOW_DEV_LOGIN": "false",
+    "PHONE_VERIFICATION_CODE_TTL_SECONDS": "600",
+    "MAX_PHONE_VERIFY_ATTEMPTS": "5",
+    "DATA_RETENTION_DAYS": "30"
+  }
+}
