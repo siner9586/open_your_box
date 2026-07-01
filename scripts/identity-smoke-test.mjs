@@ -14,4 +14,4 @@ const adminYes=await req('GET','/api/admin/reviews',null,{'x-admin-token':ADMIN_
 const privacy=await req('POST','/api/privacy/request',{user_id:'usr_demo',request_type:'export',scope:'self'});
 const summary={baseUrl:BASE_URL,devLoginStatus:dev.status,realNameStatus:real.data.status,identityStatus:status.status,phoneStatus:phone.data.status,verifyStatus:verify.status,consentStatus:consent.data.status,phoneDeepScanReason:JSON.stringify(scan.data).includes('PHONE_DEEP_SCAN_DISABLED')?'PHONE_DEEP_SCAN_DISABLED':'see-output',normalScanOk:normal.ok,adminWithoutToken:adminNo.status,adminWithToken:adminYes.status,privacyStatus:privacy.data.status};
 console.log(JSON.stringify(summary,null,2));
-if(!normal.ok||adminNo.status!==401)process.exit(1);
+if(!normal.ok||adminNo.status!==401||real.status>=500||phone.status>=500||status.status!==200||privacy.status>=500)process.exit(1);

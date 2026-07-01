@@ -24,3 +24,19 @@ Demo 数据不包含真实个人或真实公司，只使用 `example.com`、`dem
 ## 第三方 API 调用
 
 第三方 API 只能在本地或服务端通过 Secret 调用。调用前必须确认目标属于本人、自有资产或明确授权资产。
+
+## 生产版身份与授权数据
+
+生产版只允许本人或明确授权主体自查。实名认证、手机号归属验证、授权记录和隐私请求只保存 salted hash、masked subject、状态和 provider/manual review reference，不保存身份证号、真实姓名、手机号、OTP、API Key、密码或 session token 明文。
+
+数据展示遵循 mask 原则；管理员审核页只展示 masked value 和 evidence/ref。`ADMIN_TOKEN` 仅用于保护审核 API，不会写入前端代码或仓库。
+
+## 手机号深度扫描限制
+
+手机号深度扫描默认关闭，并且不会从前端开启。未来如需开放，必须同时满足实名 verified、手机号归属 verified、`phone_deep_scan` 授权 granted、限流通过、审计记录写入和目标 hash 匹配。项目不做查别人隐私、不撞库、不绕过验证码、不检测登录态、不保存敏感明文。
+
+## 数据权利
+
+用户可通过隐私中心创建导出、删除、匿名化请求，也可撤销授权。默认生产保留周期由 `DATA_RETENTION_DAYS` 控制，当前建议值为 30 天。
+
+接入真实实名认证或短信供应商前，必须完成合同、隐私政策、数据处理协议和合规评估。

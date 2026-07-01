@@ -5,9 +5,18 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "open-your-box-db"
+      "database_name": "open-your-box-db",
+      "database_id": "5c15f49b-53e2-4bb9-8d6b-55aa53f60fb6"
     }
   ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SCAN_QUEUE",
+        "queue": "open-your-box-scan"
+      }
+    ]
+  },
   "vars": {
     "ENABLE_PHONE_DEEP_SCAN": "false",
     "ENABLE_DEMO_ADAPTERS": "true",

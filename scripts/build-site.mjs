@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const dist = path.join(root, 'dist');
-const routes = ['personal','organization','tools','risk-model','report','safety','method','passport','company-card','map','diff','developer-kit','family-safety','executive-brief','watchlist','vendor-snapshot','privacy','social','accounts','reports','risk','settings','auth','login','identity','consent','privacy-center','job','coverage'];
+const routes = ['personal','organization','tools','risk-model','report','safety','method','passport','company-card','map','diff','developer-kit','family-safety','executive-brief','watchlist','vendor-snapshot','privacy','social','accounts','reports','risk','settings','auth','login','identity','consent','privacy-center','admin/reviews','job','coverage'];
 
 function prepareHtml(html, assetPrefix) {
   return html

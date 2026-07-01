@@ -8,7 +8,7 @@
     "dev": "node scripts/dev-server.mjs",
     "build": "node scripts/build-site.mjs",
     "lint": "node scripts/lint-content.mjs",
-    "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/smoke-test.mjs && node --check scripts/identity-smoke-test.mjs && node --check src/server/identity/security.js && node --check src/server/identity/repository.js && node --check src/server/identity/providers.js && node --check src/server/identity/gating.js && node --check src/server/identity/api.js && node --check src/server/scan/async.js",
+    "typecheck": "node --check assets/app.js && node --check functions/_lib/api.js && node --check scripts/build-site.mjs && node --check scripts/smoke-test.mjs && node --check scripts/identity-smoke-test.mjs && node --check src/server/identity/security.js && node --check src/server/identity/repository.js && node --check src/server/identity/providers.js && node --check src/server/identity/gating.js && node --check src/server/identity/api.js && node --check src/server/scan/async.js",
     "test": "node scripts/test.mjs",
     "db:migrate:local": "npx wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "npx wrangler d1 migrations apply DB --remote",

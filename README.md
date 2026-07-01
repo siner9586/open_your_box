@@ -79,7 +79,82 @@ npm install
 npm run dev
 ```
 
-本项目当前版本为零后端静态站，核心命令不依赖第三方前端框架，便于 GitHub Pages、Cloudflare Pages、Netlify 或任意静态服务器部署。
+本项目当前生产线使用 Cloudflare Pages Functions + D1。静态页面仍由 `scripts/build-site.mjs` 生成，API 负责异步任务、实名/授权、隐私请求、管理员审核和健康检查。
+
+## 生产部署
+
+生产默认必须保持：
+
+- `ENABLE_PHONE_DEEP_SCAN=false`
+- `IDENTITY_PROVIDER_MODE=manual`
+- `ALLOW_DEV_LOGIN=false`
+
+部署命令：
+
+```bash
+npm install
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+npm run db:migrate:remote
+npx wrangler pages deploy dist --project-name open-your-box
+BASE_URL=<PRODUCTION_URL> RUN_PENDING_TOKEN=<CRON_SECRET> npm run smoke
+BASE_URL=<PRODUCTION_URL> ADMIN_TOKEN=<ADMIN_TOKEN> npm run smoke:identity
+```
+
+D1 binding 名称必须是 `DB`，数据库名为 `open-your-box-db`。Secret 只通过 Cloudflare 交互式命令或控制台配置，不写入仓库：
+
+```bash
+npx wrangler secret put SCAN_SALT
+npx wrangler secret put CRON_SECRET
+npx wrangler secret put ADMIN_TOKEN
+```
+
+Cloudflare 控制台路径：Workers & Pages → open-your-box → Settings → Environment variables。D1 绑定路径：Workers & Pages → open-your-box → Settings → Functions → D1 database bindings → Add binding → Variable name `DB` → D1 database `open-your-box-db`。
+
+## 实名认证与授权闭环
+
+生产默认使用人工审核 provider。实名认证只保存 salted hash、masked subject 和 provider/manual review reference，不保存身份证号、真实姓名或手机号明文。未实名用户不能执行手机号深度扫描。
+
+手机号归属验证同样只保存 `phone_hash` 和 `phone_masked`。manual provider 会创建 `identity_verifications` pending 记录和 `admin_review_queue` 项，管理员 approve 后才会把对应 verification 更新为 `verified`。
+
+授权通过 `consent_records` 记录，可在 `/consent/` 授予或撤销，在 `/privacy-center/` 创建导出、删除、匿名化请求。管理员审核页面 `/admin/reviews/` 必须提供 `ADMIN_TOKEN`，只展示 masked 和 evidence/ref。
+
+## 手机号深度扫描安全边界
+
+手机号深度扫描默认关闭。即使未来开启，也必须同时满足：
+
+- `ENABLE_PHONE_DEEP_SCAN=true`
+- 用户 `real_name` verified
+- 目标手机号归属 `phone_ownership` verified
+- `phone_deep_scan` consent granted
+- rate limit 通过
+- audit log 已写入
+- target `phone_hash` 与已验证手机号 hash 一致
+
+当前第一版只提供 gating 和 limited skeleton result，不做大规模平台撞库、不做验证码绕过、不做登录态检测、不查询他人隐私。
+
+## 线上变量
+
+Variables：
+
+- `ENABLE_PHONE_DEEP_SCAN=false`
+- `ENABLE_DEMO_ADAPTERS=true`
+- `MAX_TARGETS_PER_JOB=10`
+- `MAX_ITEMS_PER_RUN=25`
+- `MAX_SUBMISSIONS_PER_HOUR=20`
+- `IDENTITY_PROVIDER_MODE=manual`
+- `ALLOW_DEV_LOGIN=false`
+- `PHONE_VERIFICATION_CODE_TTL_SECONDS=600`
+- `MAX_PHONE_VERIFY_ATTEMPTS=5`
+- `DATA_RETENTION_DAYS=30`
+
+Required Secrets：`SCAN_SALT`、`CRON_SECRET`、`ADMIN_TOKEN`。
+
+Optional Secrets：`SHODAN_API_KEY`、`HIBP_API_KEY`、`VIRUSTOTAL_API_KEY`、`GITHUB_TOKEN`、`IDENTITY_PROVIDER_API_KEY`。
+
+接入真实实名供应商前必须完成合同、隐私政策、数据处理协议和合规评估。缺少 `IDENTITY_PROVIDER_API_KEY` 时 external provider skeleton 只返回 pending/skipped。
 
 ## 环境变量
 
