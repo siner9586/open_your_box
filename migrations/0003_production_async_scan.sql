@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS scan_jobs (id TEXT PRIMARY KEY,user_id TEXT,mode TEXT,status TEXT,progress INTEGER,total_items INTEGER,completed_items INTEGER,target_summary TEXT,error_code TEXT,error_message TEXT,created_at TEXT,updated_at TEXT,started_at TEXT,finished_at TEXT);
+CREATE TABLE IF NOT EXISTS scan_items (id TEXT PRIMARY KEY,job_id TEXT,target_type TEXT,target_hash TEXT,target_masked TEXT,adapter_id TEXT,status TEXT,result_status TEXT,reason TEXT,evidence_count INTEGER,created_at TEXT,updated_at TEXT);
+CREATE TABLE IF NOT EXISTS scan_evidence (id TEXT PRIMARY KEY,job_id TEXT,item_id TEXT,source TEXT,evidence_type TEXT,evidence_preview TEXT,evidence_ref TEXT,severity TEXT,confidence TEXT,created_at TEXT);
+CREATE TABLE IF NOT EXISTS adapter_runs (id TEXT PRIMARY KEY,job_id TEXT,adapter_id TEXT,target_type TEXT,status TEXT,reason TEXT,error_message TEXT,started_at TEXT,finished_at TEXT);
