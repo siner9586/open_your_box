@@ -1,30 +1,23 @@
 {
   "name": "open-your-box",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "Open Your Box｜本人、家庭与企业真实数字足迹和暴露面自查服务",
+  "description": "Open Your Box privacy self-check service",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "build": "node scripts/build-site.mjs",
     "lint": "node scripts/lint-content.mjs",
-    "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/generate-demo-report.mjs && node --check src/scanners/core/runtime.mjs && node --check src/scanners/core/external-adapters.mjs && node --check src/scanners/core/hibp-adapter.mjs && node --check functions/_lib/api.js",
+    "typecheck": "node --check assets/app.js && node --check scripts/build-site.mjs && node --check scripts/smoke-test.mjs && node --check scripts/identity-smoke-test.mjs && node --check src/server/identity/security.js && node --check src/server/identity/repository.js && node --check src/server/identity/providers.js && node --check src/server/identity/gating.js && node --check src/server/identity/api.js && node --check src/server/scan/async.js",
     "test": "node scripts/test.mjs",
-    "test:api": "node scripts/cloudflare-api-smoke.mjs",
-    "e2e": "node scripts/test.mjs --e2e",
-    "lighthouse:dry": "node scripts/lighthouse-dry.mjs",
-    "demo:report": "node scripts/generate-demo-report.mjs",
-    "scan:shodan": "python3 scripts/run-shodan.py"
+    "db:migrate:local": "npx wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "npx wrangler d1 migrations apply DB --remote",
+    "health:local": "node scripts/health-check.mjs",
+    "scan:demo": "node scripts/scan-demo.mjs",
+    "smoke": "node scripts/smoke-test.mjs",
+    "smoke:identity": "node scripts/identity-smoke-test.mjs"
   },
-  "engines": {
-    "node": ">=20"
-  },
-  "keywords": [
-    "defensive-osint",
-    "exposure-management",
-    "privacy",
-    "cloudflare-pages-functions",
-    "security-awareness"
-  ],
+  "engines": { "node": ">=20" },
+  "keywords": ["privacy", "cloudflare-pages-functions"],
   "license": "MIT"
 }
